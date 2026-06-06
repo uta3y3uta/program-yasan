@@ -47,6 +47,10 @@
   .iconbtn.primary{background:var(--accent);color:#fff}
   .iconbtn.primary:hover{background:var(--accent-d)}
   .iconbtn svg{width:20px;height:20px}
+  .durchk .chk{opacity:0;transition:.15s}
+  .durchk.on{background:var(--accent);color:#fff}
+  .durchk.on:hover{background:var(--accent-d)}
+  .durchk.on .chk{opacity:1}
   .seg{display:flex;background:#f3f5f9;border-radius:12px;padding:4px;gap:2px;flex:none}
   .seg button{
     border:none;background:transparent;color:var(--muted);font-weight:700;font-size:13px;
@@ -235,6 +239,12 @@
     <button data-s="60"><span>60</span><span class="u">分</span></button>
   </div>
 
+  <!-- duration toggle -->
+  <button class="iconbtn durchk" id="btnDur" aria-label="所要時間を表示">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><path class="chk" d="M7.5 12.5l3 3 6-6.5"/></svg>
+    <span class="tip">所要時間</span>
+  </button>
+
   <!-- zoom -->
   <div class="zoom">
     <button id="zOut" aria-label="縮小"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6"/><path d="M21 21l-4.3-4.3"/></svg></button>
@@ -334,7 +344,7 @@
   let selId=null, clip=null, reorderId=null, dropHiEl=null;
   let undoStack=[], redoStack=[], lastCommitted=null;
 
-  function defaultState(){return {title:"",scale:30,startMin:540,endMin:1080,ppm:2,fontScale:1,timelines:[{id:"t1",name:"",blocks:[]}],parking:[]};}
+  function defaultState(){return {title:"",scale:30,startMin:540,endMin:1080,ppm:2,fontScale:1,showDur:false,timelines:[{id:"t1",name:"",blocks:[]}],parking:[]};}
 
   const $=s=>document.querySelector(s);
   const track=$("#track"), sidebar=$("#sidebar"), okibaBody=$("#okibaBody"), ptitle=$("#ptitle"), toastEl=$("#toast");
@@ -379,6 +389,7 @@
     s.ppm=clamp(s.ppm,0.8,8);
     if(!s.fontScale)s.fontScale=1;
     s.fontScale=clamp(s.fontScale,0.7,2);
+    s.showDur=!!s.showDur;
     if([5,10,30,60].indexOf(s.scale)<0)s.scale=30;
     return s;
   }
@@ -483,6 +494,7 @@
     $("#zoom").value=state.ppm;
     $("#fsize").value=state.fontScale;
     document.documentElement.style.setProperty("--fscale",state.fontScale);
+    $("#btnDur").classList.toggle("on",!!state.showDur);
     [...document.querySelectorAll("#segScale button")].forEach(x=>x.classList.toggle("active",+x.dataset.s===state.scale));
   }
 
@@ -490,7 +502,7 @@
     el.style.top=posPx(b.startMin)+"px";
     el.style.height=(b.durMin*state.ppm)+"px";
     el.style.background=b.color; el.style.color=inkOn(b.color);
-    const tm=el.querySelector(".btime"); if(tm)tm.textContent=fmt(b.startMin)+"–"+fmt(b.startMin+b.durMin);
+    const tm=el.querySelector(".btime"); if(tm)tm.textContent=fmt(b.startMin)+"–"+fmt(b.startMin+b.durMin)+(state.showDur?"（"+b.durMin+"分）":"");
   }
   function buildBlock(b){
     const el=document.createElement("div"); el.className="block"+(b.id===selId?" sel":""); el.dataset.id=b.id;
@@ -781,6 +793,7 @@
 
   // ---------------- toolbar ----------------
   $("#segScale").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.scale=+b.dataset.s;persist();render();});
+  $("#btnDur").addEventListener("click",()=>{state.showDur=!state.showDur;persist();render();toast(state.showDur?"所要時間を表示":"所要時間を非表示");});
   ptitle.addEventListener("input",()=>{state.title=ptitle.value;saveLocal();});
   ptitle.addEventListener("change",()=>{state.title=ptitle.value;persist();});
   ptitle.addEventListener("pointerdown",e=>e.stopPropagation());
