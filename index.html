@@ -13,6 +13,7 @@
     --bg:#eef2f7; --panel:#ffffff; --ink:#2b3445; --muted:#8a94a6;
     --line:#e6eaf0; --hour:#c7d0dc; --accent:#4DABF7; --accent-d:#2f8de0;
     --shadow:0 6px 20px rgba(40,60,90,.10); --shadow-s:0 2px 6px rgba(40,60,90,.12);
+    --fscale:1;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -58,6 +59,9 @@
   .zoom button{border:none;background:transparent;color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:4px}
   .zoom button:hover{color:var(--accent-d)}
   .zoom button svg{width:17px;height:17px}
+  .zoom button .az{font-weight:900;line-height:1}
+  .zoom button .az.sm{font-size:11px}
+  .zoom button .az.lg{font-size:17px}
   .zoom input[type=range]{-webkit-appearance:none;appearance:none;width:104px;height:6px;border-radius:6px;background:#d8deea;outline:none}
   .zoom input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:var(--shadow-s)}
   .zoom input[type=range]::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:50%;background:var(--accent);cursor:pointer}
@@ -118,8 +122,8 @@
   .block:active{cursor:grabbing}
   .block.sel{box-shadow:0 0 0 3px var(--accent),var(--shadow);z-index:5}
   .block .inner{position:absolute;inset:0;display:flex;flex-direction:column;padding:5px 8px;gap:2px;overflow:hidden;border-radius:9px}
-  .block .btime{font-size:10px;font-weight:800;opacity:.72;letter-spacing:.2px}
-  .block .blabel{font-size:13px;font-weight:800;line-height:1.2;outline:none;overflow:hidden;flex:1;word-break:break-word;cursor:text}
+  .block .btime{font-size:calc(10px*var(--fscale));font-weight:800;opacity:.72;letter-spacing:.2px}
+  .block .blabel{font-size:calc(13px*var(--fscale));font-weight:800;line-height:1.2;outline:none;overflow:hidden;flex:1;word-break:break-word;cursor:text}
   .block .blabel:empty:before{content:"やること";opacity:.45;font-weight:700}
   .block .handle{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);height:6px;width:38px;background:rgba(0,0,0,.18);border-radius:6px;cursor:ns-resize}
   .block:hover .handle{background:rgba(0,0,0,.3)}
@@ -148,7 +152,7 @@
     display:flex;align-items:center;padding:7px 10px;cursor:grab;border:2px solid rgba(255,255,255,.5);touch-action:none}
   .chip:active{cursor:grabbing}
   .chip.sel{box-shadow:0 0 0 3px var(--accent),var(--shadow)}
-  .clabel{flex:1;min-width:0;font-size:12px;font-weight:800;line-height:1.2;outline:none;overflow:hidden;word-break:break-word;cursor:text}
+  .clabel{flex:1;min-width:0;font-size:calc(12px*var(--fscale));font-weight:800;line-height:1.2;outline:none;overflow:hidden;word-break:break-word;cursor:text}
   .clabel:empty:before{content:"カード";opacity:.5;font-weight:700}
   .chipbar{display:flex;gap:4px;justify-content:center;padding:1px 0 2px}
   .chipbar button{width:30px;height:30px;border:none;border-radius:9px;background:#f3f5f9;cursor:pointer;display:grid;place-items:center;color:var(--ink)}
@@ -234,8 +238,15 @@
   <!-- zoom -->
   <div class="zoom">
     <button id="zOut" aria-label="縮小"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6"/><path d="M21 21l-4.3-4.3"/></svg></button>
-    <input type="range" id="zoom" min="0.8" max="4" step="0.2" value="2" />
+    <input type="range" id="zoom" min="0.8" max="8" step="0.2" value="2" />
     <button id="zIn" aria-label="拡大"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M11 8v6M8 11h6"/><path d="M21 21l-4.3-4.3"/></svg></button>
+  </div>
+
+  <!-- font size -->
+  <div class="zoom">
+    <button id="fOut" aria-label="文字を小さく"><span class="az sm">A</span></button>
+    <input type="range" id="fsize" min="0.7" max="2" step="0.1" value="1" aria-label="文字の大きさ" />
+    <button id="fIn" aria-label="文字を大きく"><span class="az lg">A</span></button>
   </div>
 
   <!-- output -->
@@ -323,7 +334,7 @@
   let selId=null, clip=null, reorderId=null, dropHiEl=null;
   let undoStack=[], redoStack=[], lastCommitted=null;
 
-  function defaultState(){return {title:"",scale:30,startMin:540,endMin:1080,ppm:2,timelines:[{id:"t1",name:"",blocks:[]}],parking:[]};}
+  function defaultState(){return {title:"",scale:30,startMin:540,endMin:1080,ppm:2,fontScale:1,timelines:[{id:"t1",name:"",blocks:[]}],parking:[]};}
 
   const $=s=>document.querySelector(s);
   const track=$("#track"), sidebar=$("#sidebar"), okibaBody=$("#okibaBody"), ptitle=$("#ptitle"), toastEl=$("#toast");
@@ -365,6 +376,9 @@
     if(!Array.isArray(s.parking))s.parking=[];
     s.parking=s.parking.filter(c=>c&&typeof c==="object").map(c=>({id:c.id||gid("p"),label:typeof c.label==="string"?c.label:"",color:c.color||"#4DABF7",durMin:c.durMin||30}));
     if(!s.ppm)s.ppm=2;
+    s.ppm=clamp(s.ppm,0.8,8);
+    if(!s.fontScale)s.fontScale=1;
+    s.fontScale=clamp(s.fontScale,0.7,2);
     if([5,10,30,60].indexOf(s.scale)<0)s.scale=30;
     return s;
   }
@@ -467,6 +481,8 @@
 
     ptitle.value=state.title;
     $("#zoom").value=state.ppm;
+    $("#fsize").value=state.fontScale;
+    document.documentElement.style.setProperty("--fscale",state.fontScale);
     [...document.querySelectorAll("#segScale button")].forEach(x=>x.classList.toggle("active",+x.dataset.s===state.scale));
   }
 
@@ -770,8 +786,12 @@
   ptitle.addEventListener("pointerdown",e=>e.stopPropagation());
   $("#zoom").addEventListener("input",e=>{state.ppm=+e.target.value;saveLocal();render();});
   $("#zoom").addEventListener("change",e=>{state.ppm=+e.target.value;persist();render();});
-  $("#zOut").onclick=()=>{state.ppm=clamp(Math.round((state.ppm-0.4)*10)/10,0.8,4);persist();render();};
-  $("#zIn").onclick=()=>{state.ppm=clamp(Math.round((state.ppm+0.4)*10)/10,0.8,4);persist();render();};
+  $("#zOut").onclick=()=>{state.ppm=clamp(Math.round((state.ppm-0.4)*10)/10,0.8,8);persist();render();};
+  $("#zIn").onclick=()=>{state.ppm=clamp(Math.round((state.ppm+0.4)*10)/10,0.8,8);persist();render();};
+  $("#fsize").addEventListener("input",e=>{state.fontScale=+e.target.value;saveLocal();render();});
+  $("#fsize").addEventListener("change",e=>{state.fontScale=+e.target.value;persist();render();});
+  $("#fOut").onclick=()=>{state.fontScale=clamp(Math.round((state.fontScale-0.1)*10)/10,0.7,2);persist();render();};
+  $("#fIn").onclick=()=>{state.fontScale=clamp(Math.round((state.fontScale+0.1)*10)/10,0.7,2);persist();render();};
 
   $("#clearAll").onclick=()=>{
     const has=state.timelines.some(t=>t.blocks.length)||state.parking.length||state.timelines.length>1;
