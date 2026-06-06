@@ -125,6 +125,7 @@
   }
   .block:active{cursor:grabbing}
   .block.sel{box-shadow:0 0 0 3px var(--accent),var(--shadow);z-index:5}
+  .block.dragghost{opacity:.55;cursor:grabbing;z-index:7;box-shadow:var(--shadow);transition:none}
   .block .inner{position:absolute;inset:0;display:flex;flex-direction:column;padding:5px 8px;gap:2px;overflow:hidden;border-radius:9px}
   .block .btime{font-size:calc(10px*var(--fscale));font-weight:800;opacity:.72;letter-spacing:.2px}
   .block .blabel{font-size:calc(13px*var(--fscale));font-weight:800;line-height:1.2;outline:none;overflow:hidden;flex:1;word-break:break-word;cursor:text}
@@ -444,7 +445,16 @@
   function fromHash(){
     const h=location.hash||"";
     if(h.indexOf("#d=")===0){
-      try{const j=decodeURIComponent(escape(atob(h.slice(3))));state=normalize(JSON.parse(j));return true;}catch(e){}
+      try{
+        let b=h.slice(3);
+        try{b=decodeURIComponent(b);}catch(e){}            // 一部アプリが%エンコードした場合に戻す
+        b=b.replace(/ /g,"+").replace(/-/g,"+").replace(/_/g,"/"); // base64url・空白化を許容
+        while(b.length%4)b+="=";
+        const j=decodeURIComponent(escape(atob(b)));
+        state=normalize(JSON.parse(j));
+        saveLocal();                                       // スマホ再読込でも残るように保存
+        return true;
+      }catch(e){}
     }
     return false;
   }
@@ -776,7 +786,7 @@
     let moving=false;
     const move=ev=>{
       if(!moving && Math.abs(ev.clientX-sx)+Math.abs(ev.clientY-sy)<5)return;
-      moving=true;
+      if(!moving){moving=true; const el0=blockEl(b.id); if(el0)el0.classList.add("dragghost");}
       if(okibaAtPoint(ev.clientX,ev.clientY))setDropHi(okibaBody);
       else{const t=laneAtPoint(ev.clientX,ev.clientY);setDropHi(t?t.el:null);}
       let ns=snap(minAt(ev.clientY,laneTop)-grab);
@@ -1001,7 +1011,7 @@
     },
     url(){
       try{
-        const data=btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+        const data=btoa(unescape(encodeURIComponent(JSON.stringify(state)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
         const link=location.origin+location.pathname+"#d="+data;
         if(navigator.clipboard&&navigator.clipboard.writeText)
           navigator.clipboard.writeText(link).then(()=>toast("URLをコピーしました"),()=>prompt("このURLをコピーしてください",link));
