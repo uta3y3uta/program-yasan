@@ -381,7 +381,7 @@
       <div class="sb-card" id="sbCard" title="クリックまたはドラッグでカードを追加"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
       <div class="sb-paste">
         <textarea id="pasteBox" class="sb-pastebox" rows="4" placeholder="予定を貼り付け／入力&#10;例 9:00〜9:30 朝の会" title="時刻＋やることを貼り付けると、自動でカードになります。&#10;&#10;【例1：時刻で指定】&#10;17:30〜18:15 夕食&#10;18:15〜19:45 ワークショップ&#10;&#10;【例2：所要時間で配分】&#10;13:00〜17:00&#10;実践提案（20分間）&#10;休憩（10分間）&#10;&#10;※全角や「〇時〇分」の書き方もOK"></textarea>
-        <button id="pasteInsert" class="sb-pastebtn" type="button">カードにする</button>
+        <button id="pasteInsert" class="sb-pastebtn" type="button">カード化</button>
       </div>
     </div>
     <div class="sb-okiba" id="okibaBody"></div>
@@ -1053,17 +1053,24 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
     const SEP="\\s*[~〜～\\-－ー―—–]+\\s*";                              // 範囲を表す各種ダッシュ
     const rangeRe=new RegExp("^"+TM+SEP+TM+"\\s*([\\s\\S]*)$");          // 開始〜終了 ＋ ラベル
     const onlyRe=new RegExp("^"+TM+"\\s*$");                             // 時刻のみ（先頭の基準時刻）
+    const isSeq=ln=>!rangeRe.test(ln)&&!onlyRe.test(ln);                 // 所要時間で順次配置される行か
     const DEF=Math.max(state.scale,30);
     const toMin=(h,m)=>parseInt(h,10)*60+(m?parseInt(m,10):0);
-    let cursor=null; const out=[];
-    for(const ln of lines){
+    let cursor=null; const cards=[]; let lo=Infinity,hi=-Infinity;
+    const bound=(a,b)=>{lo=Math.min(lo,a);hi=Math.max(hi,b);};          // 表示範囲のヒント（ヘッダ範囲も含む）
+    for(let i=0;i<lines.length;i++){
+      const ln=lines[i];
       const rm=ln.match(rangeRe);
       if(rm){
         let s=toMin(rm[1],rm[2]), e=toMin(rm[3],rm[4]);
         if(e<=s)e+=1440;                                                // 日付またぎ（例 23:00〜1:00）
         const label=(rm[5]||"").trim();
-        if(label){out.push({startMin:s,durMin:e-s,label});cursor=e;}     // ラベル有り → カード
-        else cursor=s;                                                   // ラベル無し → 基準時刻ヘッダ
+        if(label){cards.push({startMin:s,durMin:e-s,label});bound(s,e);cursor=e;}      // ラベル有り → カード
+        else{
+          const next=lines[i+1];
+          if(next!=null&&isSeq(next)){cursor=s;bound(s,e);}             // 直後が順次行 → 配分用の基準時刻（ヘッダ）
+          else{cards.push({startMin:s,durMin:e-s,label:""});bound(s,e);cursor=e;}      // それ以外 → やること無しでもカード化
+        }
         continue;
       }
       const om=ln.match(onlyRe);
@@ -1071,22 +1078,20 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
       const start=(cursor==null)?state.startMin:cursor;
       const dm=ln.match(/(\d{1,3})\s*分/g);                             // 「○分」「○分間」から所要時間
       const dur=dm?Math.max(parseInt(dm[dm.length-1],10),1):DEF;
-      out.push({startMin:start,durMin:dur,label:ln});
+      cards.push({startMin:start,durMin:dur,label:ln});bound(start,start+dur);
       cursor=start+dur;
     }
-    return out;
+    return {cards,lo:(lo===Infinity?null:lo),hi:(hi===-Infinity?null:hi)};
   }
   function insertSchedule(text){
-    const cards=parseScheduleText(text);
+    const res=parseScheduleText(text), cards=res.cards;
     if(!cards.length)return 0;
     const tl=state.timelines[0]; if(!tl)return 0;
     const hadBlocks=state.timelines.some(t=>t.blocks.length);
-    let minS=Infinity,maxE=-Infinity;
     cards.forEach(c=>{
       tl.blocks.push({id:gid("b"),startMin:c.startMin,durMin:c.durMin,label:c.label,color:ADD_COLOR});
-      minS=Math.min(minS,c.startMin); maxE=Math.max(maxE,c.startMin+c.durMin);
     });
-    const fl=Math.floor(minS/60)*60, cl=Math.ceil(maxE/60)*60;          // 時間単位で表示範囲をそろえる
+    const fl=Math.floor(res.lo/60)*60, cl=Math.ceil(res.hi/60)*60;      // 時間単位で表示範囲をそろえる
     if(!hadBlocks){state.startMin=fl;state.endMin=cl;}                   // 空なら貼り付け内容にフィット
     else{state.startMin=Math.min(state.startMin,fl);state.endMin=Math.max(state.endMin,cl);} // 既存があれば広げるだけ
     if(state.endMin<=state.startMin)state.endMin=state.startMin+state.scale;
