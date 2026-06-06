@@ -200,11 +200,27 @@
   .menu .row svg{width:19px;height:19px;color:var(--accent-d);flex:none}
   .menu .sep{height:1px;background:var(--line);margin:6px 6px}
   .menu .ttl{font-size:11px;color:var(--muted);font-weight:800;padding:6px 12px 2px;letter-spacing:.4px}
-  .pagesel{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 12px 8px}
-  .pagesel>span{font-size:12px;font-weight:800;color:var(--muted)}
+  .pagesel{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:4px 12px 8px}
+  .pagesel>span{font-size:12px;font-weight:800;color:var(--muted);padding-top:6px}
+  .pagesel-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
   .pageseg{display:flex;gap:3px;background:#eef1f6;border-radius:9px;padding:3px}
   .pageseg button{border:none;background:transparent;width:30px;height:26px;border-radius:7px;font-weight:800;font-size:13px;color:var(--ink);cursor:pointer}
   .pageseg button.active{background:var(--accent);color:#fff}
+  .reviewbtn{display:flex;align-items:center;gap:5px;border:none;background:#eef4ff;color:var(--accent-d);border-radius:9px;padding:6px 12px;font-weight:800;font-size:12px;cursor:pointer}
+  .reviewbtn:hover{background:var(--accent);color:#fff}
+  .reviewbtn svg{width:15px;height:15px}
+  /* output preview overlay */
+  .reviewov{position:fixed;inset:0;background:rgba(20,28,40,.55);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+  .reviewbox{background:#fff;border-radius:16px;width:min(900px,94vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:var(--shadow);overflow:hidden}
+  .reviewhd{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);flex:none}
+  .reviewhd b{font-size:15px;color:var(--ink)}
+  .reviewclose{border:none;background:#f3f5f9;width:32px;height:32px;border-radius:9px;cursor:pointer;font-weight:800;color:var(--ink)}
+  .reviewclose:hover{background:#e9edf4}
+  .reviewbody{overflow:auto;padding:16px;display:flex;flex-direction:column;gap:18px;background:#eef1f6}
+  .reviewpage{background:#fff;box-shadow:var(--shadow-s);border-radius:6px;padding:10px}
+  .reviewpagelab{font-size:12px;font-weight:800;color:var(--muted);margin-bottom:6px}
+  .reviewpage img{width:100%;height:auto;display:block;border-radius:4px}
+  .reviewempty{padding:30px;text-align:center;color:var(--muted);font-weight:700}
   .settings .field{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 12px}
   .settings label{font-weight:700;font-size:13px;color:var(--muted)}
   .settings input[type=time]{border:1px solid var(--line);border-radius:9px;padding:6px 8px;font-size:14px;font-weight:700;color:var(--ink)}
@@ -334,10 +350,13 @@
   <div class="ttl">しゅつりょく</div>
   <div class="pagesel">
     <span>出力の枚数(PDF/画像)</span>
-    <div class="pageseg" id="pageSeg">
-      <button data-p="1" class="active">1</button>
-      <button data-p="2">2</button>
-      <button data-p="3">3</button>
+    <div class="pagesel-right">
+      <div class="pageseg" id="pageSeg">
+        <button data-p="1" class="active">1</button>
+        <button data-p="2">2</button>
+        <button data-p="3">3</button>
+      </div>
+      <button class="reviewbtn" id="btnReview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>レビュー</button>
     </div>
   </div>
   <div class="row" data-act="print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>印刷</div>
@@ -365,7 +384,6 @@
 
 <!-- ============ SETTINGS ============ -->
 <div class="menu settings" id="setMenu">
-  <div class="ttl">ひょうじする じかん</div>
   <div class="field"><label>開始</label><input type="time" id="setStart" step="300" /></div>
   <div class="field"><label>終了</label><input type="time" id="setEnd" step="300" /></div>
 </div>
@@ -494,8 +512,12 @@
     const g=document.createElement("div"); g.className="gutter";
     const gh=document.createElement("div"); gh.className="ghead"; gh.style.height=HEAD+"px";
     const gb=document.createElement("div"); gb.className="gbody"; gb.style.height=L+"px";
+    const ticks=[state.startMin];                 // 始まりの時刻は必ず表示
+    const minGap=13/state.ppm;                     // ラベルが重ならない最小間隔(分)
     const sH=Math.ceil(state.startMin/60), eH=Math.floor(state.endMin/60);
-    for(let h=sH;h<=eH;h++){const t=document.createElement("div");t.className="tick";t.textContent=fmt(h*60);t.style.top=(posPx(h*60)-7)+"px";gb.appendChild(t);}
+    for(let h=sH;h<=eH;h++){const m=h*60; if(m>state.startMin+minGap && m<state.endMin-minGap)ticks.push(m);}
+    ticks.push(state.endMin);                       // 終わりの時刻は必ず表示
+    ticks.forEach(mm=>{const t=document.createElement("div");t.className="tick";t.textContent=fmt(mm);t.style.top=(posPx(mm)-7)+"px";gb.appendChild(t);});
     g.appendChild(gh); g.appendChild(gb); track.appendChild(g);
 
     // timelines
@@ -1000,6 +1022,7 @@
     outPages=+b.dataset.p;
     [...document.querySelectorAll("#pageSeg button")].forEach(x=>x.classList.toggle("active",+x.dataset.p===outPages));
   });
+  $("#btnReview").addEventListener("click",e=>{e.stopPropagation();closeMenus();showReview();});
   outMenu.addEventListener("click",e=>{const r=e.target.closest(".row");if(!r)return;closeMenus();ACT[r.dataset.act]&&ACT[r.dataset.act]();});
   const HEAD_ROW=["タイムライン","開始","終了","所要(分)","やること"];
   function rows(){
@@ -1071,6 +1094,31 @@
     removeCaptureGrid();
     document.body.classList.remove("capturing"); selId=keep; render();
     return canvas;
+  }
+  async function showReview(){
+    if(typeof window.html2canvas!=="function"){toast("プレビュー用ライブラリ未読込");return;}
+    toast("プレビューを作成中…");
+    let canvas;
+    try{canvas=await captureCanvas();}catch(e){toast("プレビューの作成に失敗しました");return;}
+    const parts=sliceCanvas(canvas,outPages);
+    const ov=document.createElement("div"); ov.className="reviewov no-capture";
+    const box=document.createElement("div"); box.className="reviewbox";
+    const hd=document.createElement("div"); hd.className="reviewhd";
+    const ttl=document.createElement("b"); ttl.textContent="出力プレビュー"+(parts.length>1?"（"+parts.length+"枚）":"");
+    const close=document.createElement("button"); close.className="reviewclose"; close.textContent="✕"; close.title="閉じる";
+    close.onclick=()=>ov.remove();
+    hd.appendChild(ttl); hd.appendChild(close);
+    const body=document.createElement("div"); body.className="reviewbody";
+    parts.forEach((p,i)=>{
+      const wrap=document.createElement("div"); wrap.className="reviewpage";
+      if(parts.length>1){const lab=document.createElement("div"); lab.className="reviewpagelab"; lab.textContent=(i+1)+" / "+parts.length+"枚目"; wrap.appendChild(lab);}
+      const img=document.createElement("img"); img.src=p.toDataURL("image/png"); img.alt="プレビュー"; wrap.appendChild(img);
+      body.appendChild(wrap);
+    });
+    box.appendChild(hd); box.appendChild(body); ov.appendChild(box);
+    ov.addEventListener("click",e=>{if(e.target===ov)ov.remove();});
+    document.addEventListener("keydown",function esc(ev){if(ev.key==="Escape"){ov.remove();document.removeEventListener("keydown",esc);}});
+    document.body.appendChild(ov);
   }
   const ACT={
     print(){window.print();},
