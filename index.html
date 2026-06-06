@@ -130,7 +130,16 @@
   .block .blabel{font-size:calc(13px*var(--fscale));font-weight:800;line-height:1.2;outline:none;overflow:hidden;flex:1;word-break:break-word;cursor:text}
   .block .blabel:empty:before{content:"やること";opacity:.45;font-weight:700}
   .block .handle{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);height:6px;width:38px;background:rgba(0,0,0,.18);border-radius:6px;cursor:ns-resize}
+  .block .handle.top{top:2px;bottom:auto}
   .block:hover .handle{background:rgba(0,0,0,.3)}
+  /* short cards: single-row layout so text isn't clipped vertically */
+  .block.short .inner{flex-direction:row;align-items:center;gap:5px;padding:2px 8px}
+  .block.short .btime{font-size:calc(9px*var(--fscale));flex:none;white-space:nowrap}
+  .block.short .blabel{font-size:calc(11px*var(--fscale));line-height:1.1;flex:1;white-space:nowrap;text-overflow:ellipsis}
+  .block.tiny .inner{flex-direction:row;align-items:center;gap:0;padding:0 6px}
+  .block.tiny .btime{display:none}
+  .block.tiny .blabel{font-size:calc(9px*var(--fscale));line-height:1;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .block.tiny .handle.top{display:none}
 
   .actionbar{position:absolute;left:100%;top:0;margin-left:7px;display:flex;gap:4px;background:#fff;padding:5px;border-radius:12px;box-shadow:var(--shadow);z-index:8}
   .actionbar button{width:32px;height:32px;border:none;border-radius:9px;background:#f3f5f9;cursor:pointer;display:grid;place-items:center;color:var(--ink)}
@@ -199,6 +208,13 @@
   .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);background:#2b3445;color:#fff;
     padding:11px 18px;border-radius:12px;font-weight:700;font-size:14px;box-shadow:var(--shadow);z-index:80;opacity:0;transition:.25s;pointer-events:none}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .overlapask{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2b3445;color:#fff;
+    padding:10px 12px 10px 16px;border-radius:14px;box-shadow:var(--shadow);z-index:90;display:flex;align-items:center;gap:10px;font-weight:700;font-size:14px;max-width:92vw}
+  .overlapask button{border:none;border-radius:10px;padding:8px 16px;font-weight:800;font-size:14px;cursor:pointer;flex:none}
+  .overlapask .oa-yes{background:var(--accent);color:#fff}
+  .overlapask .oa-yes:hover{background:var(--accent-d)}
+  .overlapask .oa-no{background:#5b6675;color:#fff}
+  .overlapask .oa-no:hover{background:#6b7686}
 
   /* hide chrome for capture / print */
   body.capturing .no-capture{display:none !important}
@@ -233,6 +249,7 @@
 
   <!-- time scale -->
   <div class="seg" id="segScale">
+    <button data-s="1"><span>1</span><span class="u">分</span></button>
     <button data-s="5"><span>5</span><span class="u">分</span></button>
     <button data-s="10"><span>10</span><span class="u">分</span></button>
     <button data-s="30"><span>30</span><span class="u">分</span></button>
@@ -341,7 +358,7 @@
   const COLORS=["#FF8787","#FFA94D","#FFD43B","#A9E34B","#69DB7C","#38D9A9","#4DABF7","#748FFC","#DA77F2","#F783AC","#CED4DA","#FFFFFF"];
 
   let state=defaultState();
-  let selId=null, clip=null, reorderId=null, dropHiEl=null;
+  let selId=null, clip=null, reorderId=null, dropHiEl=null, overlapAskEl=null;
   let undoStack=[], redoStack=[], lastCommitted=null;
 
   function defaultState(){return {title:"",scale:30,startMin:540,endMin:1080,ppm:2,fontScale:1,showDur:false,timelines:[{id:"t1",name:"",blocks:[]}],parking:[]};}
@@ -364,6 +381,7 @@
 
   const posPx=m=>(m-state.startMin)*state.ppm;
   const laneLen=()=>(state.endMin-state.startMin)*state.ppm+TAIL;
+  const laneW=tl=>clamp(tl&&tl.width||LANE_W,120,520);
 
   function findCard(id){
     for(const tl of state.timelines){const i=tl.blocks.findIndex(b=>b.id===id);if(i>=0)return{kind:"tl",tl,b:tl.blocks[i],i};}
@@ -381,7 +399,7 @@
       else s.timelines=[{id:"t1",name:"",blocks:[]}];
     }
     delete s.blocks; delete s.orientation; delete s.seq;
-    s.timelines.forEach((tl,i)=>{if(!tl.id)tl.id="t"+(i+1);if(typeof tl.name!=="string")tl.name="";if(!Array.isArray(tl.blocks))tl.blocks=[];
+    s.timelines.forEach((tl,i)=>{if(!tl.id)tl.id="t"+(i+1);if(typeof tl.name!=="string")tl.name="";if(tl.width)tl.width=clamp(tl.width,120,520);if(!Array.isArray(tl.blocks))tl.blocks=[];
       tl.blocks.forEach(b=>{if(!b.id)b.id=gid("b");if(typeof b.label!=="string")b.label="";if(!b.color)b.color="#4DABF7";});});
     if(!Array.isArray(s.parking))s.parking=[];
     s.parking=s.parking.filter(c=>c&&typeof c==="object").map(c=>({id:c.id||gid("p"),label:typeof c.label==="string"?c.label:"",color:c.color||"#4DABF7",durMin:c.durMin||30}));
@@ -390,7 +408,7 @@
     if(!s.fontScale)s.fontScale=1;
     s.fontScale=clamp(s.fontScale,0.7,2);
     s.showDur=!!s.showDur;
-    if([5,10,30,60].indexOf(s.scale)<0)s.scale=30;
+    if([1,5,10,30,60].indexOf(s.scale)<0)s.scale=30;
     return s;
   }
   function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
@@ -450,6 +468,7 @@
     // timelines
     state.timelines.forEach(tl=>{
       const col=document.createElement("div"); col.className="timeline"+(tl.id===reorderId?" dragging":"");
+      col.style.width=laneW(tl)+"px";
       const head=document.createElement("div"); head.className="tl-head"; head.style.height=HEAD+"px";
       const grip=document.createElement("button"); grip.className="tl-grip no-capture"; grip.title="ドラッグで並べ替え";
       grip.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>';
@@ -467,9 +486,11 @@
         head.appendChild(del);
       }
       const lane=document.createElement("div"); lane.className="lane"; lane.dataset.tl=tl.id;
-      lane.style.height=L+"px"; lane.style.width=LANE_W+"px";
+      lane.style.height=L+"px"; lane.style.width=laneW(tl)+"px";
+      let gStepMin=state.scale, gStepPx=gStepMin*state.ppm;
+      while(gStepPx<6){gStepMin+=state.scale;gStepPx=gStepMin*state.ppm;}
       lane.style.backgroundImage=
-        "repeating-linear-gradient(to bottom,var(--line) 0 1px,transparent 1px "+(state.scale*state.ppm)+"px),"+
+        "repeating-linear-gradient(to bottom,var(--line) 0 1px,transparent 1px "+gStepPx+"px),"+
         "repeating-linear-gradient(to bottom,var(--hour) 0 1px,transparent 1px "+(60*state.ppm)+"px)";
       lane.addEventListener("pointerdown",e=>{if(e.target===lane){selId=null;render();}});
       tl.blocks.forEach(b=>lane.appendChild(buildBlock(b)));
@@ -500,8 +521,11 @@
 
   function styleBlock(el,b){
     el.style.top=posPx(b.startMin)+"px";
-    el.style.height=(b.durMin*state.ppm)+"px";
+    const h=b.durMin*state.ppm;
+    el.style.height=h+"px";
     el.style.background=b.color; el.style.color=inkOn(b.color);
+    el.classList.toggle("short", h<48 && h>=26);
+    el.classList.toggle("tiny", h<26);
     const tm=el.querySelector(".btime"); if(tm)tm.textContent=fmt(b.startMin)+"–"+fmt(b.startMin+b.durMin)+(state.showDur?"（"+b.durMin+"分）":"");
   }
   function buildBlock(b){
@@ -510,10 +534,12 @@
     const tm=document.createElement("div"); tm.className="btime";
     const lb=document.createElement("div"); lb.className="blabel"; lb.textContent=b.label||"";
     inner.appendChild(tm); inner.appendChild(lb); el.appendChild(inner);
+    const ht=document.createElement("div"); ht.className="handle top no-capture"; el.appendChild(ht);
     const h=document.createElement("div"); h.className="handle no-capture"; el.appendChild(h);
     styleBlock(el,b);
     if(b.id===selId) el.appendChild(buildActionBar(b));
     el.addEventListener("pointerdown",e=>onBlockDown(e,b));
+    ht.addEventListener("pointerdown",e=>onHandleTopDown(e,b));
     h.addEventListener("pointerdown",e=>onHandleDown(e,b));
     lb.addEventListener("dblclick",e=>{e.stopPropagation();startEditEl(lb,v=>{b.label=v;});});
     return el;
@@ -702,6 +728,42 @@
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
   }
 
+  // ---------------- auto-shift: resolve overlaps around an edited block ----------------
+  function resolveOverlaps(tl,anchorId){
+    const a=tl.blocks.find(b=>b.id===anchorId); if(!a)return;
+    const lo=state.startMin, hi=state.endMin;
+    const below=tl.blocks.filter(b=>b.id!==anchorId&&b.startMin>=a.startMin).sort((x,y)=>x.startMin-y.startMin);
+    const above=tl.blocks.filter(b=>b.id!==anchorId&&b.startMin<a.startMin).sort((x,y)=>y.startMin-x.startMin);
+    let floor=a.startMin+a.durMin;
+    below.forEach(b=>{ if(b.startMin<floor)b.startMin=floor; floor=b.startMin+b.durMin; });
+    let ceil=a.startMin;
+    above.forEach(b=>{ if(b.startMin+b.durMin>ceil)b.startMin=ceil-b.durMin; ceil=b.startMin; });
+    tl.blocks.forEach(b=>{ b.startMin=clamp(b.startMin,lo,hi-b.durMin); });
+  }
+  function restyleLane(tl){ tl.blocks.forEach(b=>{const el=blockEl(b.id); if(el)styleBlock(el,b);}); }
+  function hasOverlap(tl,anchorId){
+    const a=tl.blocks.find(b=>b.id===anchorId); if(!a)return false;
+    const ae=a.startMin+a.durMin;
+    return tl.blocks.some(b=>b.id!==anchorId && b.startMin<ae && (b.startMin+b.durMin)>a.startMin);
+  }
+  function clearOverlapAsk(){ if(overlapAskEl){overlapAskEl.remove();overlapAskEl=null;} }
+  function askOverlap(tlId,anchorId){
+    clearOverlapAsk();
+    const bar=document.createElement("div"); bar.className="overlapask no-capture";
+    const msg=document.createElement("span"); msg.textContent="カードが重なっています。後ろをずらしますか？";
+    const yes=document.createElement("button"); yes.className="oa-yes"; yes.textContent="はい";
+    const no=document.createElement("button"); no.className="oa-no"; no.textContent="いいえ";
+    yes.onclick=()=>{const tl=state.timelines.find(t=>t.id===tlId); if(tl){resolveOverlaps(tl,anchorId);persist();render();} clearOverlapAsk();};
+    no.onclick=()=>clearOverlapAsk();
+    bar.appendChild(msg); bar.appendChild(yes); bar.appendChild(no);
+    document.body.appendChild(bar); overlapAskEl=bar;
+  }
+  function checkOverlapPrompt(id){
+    const f=findCard(id);
+    if(f&&f.kind==="tl"&&hasOverlap(f.tl,id))askOverlap(f.tl.id,id);
+    else clearOverlapAsk();
+  }
+
   // ---------------- pointer: move block / tap-to-edit / park ----------------
   function onBlockDown(e,b){
     if(e.target.classList.contains("handle"))return;
@@ -727,7 +789,7 @@
         if(okibaAtPoint(ev.clientX,ev.clientY)){parkBlock(b.id);return;}
         const t=laneAtPoint(ev.clientX,ev.clientY);
         if(t)reassign(b.id,t.tlId);
-        persist(); render();
+        persist(); render(); checkOverlapPrompt(b.id);
       }else{
         const lb=blockEl(b.id).querySelector(".blabel"); startEditEl(lb,v=>{b.label=v;});
       }
@@ -765,7 +827,7 @@
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
   }
 
-  // ---------------- pointer: resize ----------------
+  // ---------------- pointer: resize (bottom edge) ----------------
   function onHandleDown(e,b){
     e.preventDefault(); e.stopPropagation(); select(b.id);
     const laneTop=blockEl(b.id).closest(".lane").getBoundingClientRect().top;
@@ -774,7 +836,20 @@
       nd=clamp(nd,state.scale,state.endMin-b.startMin);
       b.durMin=nd; const el=blockEl(b.id); if(el)styleBlock(el,b);
     };
-    const up=()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up);persist();render();};
+    const up=()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up);persist();render();checkOverlapPrompt(b.id);};
+    window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
+  }
+  // ---------------- pointer: resize (top edge) ----------------
+  function onHandleTopDown(e,b){
+    e.preventDefault(); e.stopPropagation(); select(b.id);
+    const laneTop=blockEl(b.id).closest(".lane").getBoundingClientRect().top;
+    const bottom=b.startMin+b.durMin;
+    const move=ev=>{
+      let ns=snap(minAt(ev.clientY,laneTop));
+      ns=clamp(ns,state.startMin,bottom-state.scale);
+      b.startMin=ns; b.durMin=bottom-ns; const el=blockEl(b.id); if(el)styleBlock(el,b);
+    };
+    const up=()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up);persist();render();checkOverlapPrompt(b.id);};
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
   }
 
@@ -956,8 +1031,8 @@
     if(!selId)return; const f=findCard(selId); if(!f)return; const b=f.b;
     if(e.key==="Delete"||e.key==="Backspace"){e.preventDefault();removeCard(selId);}
     else if(ctrl&&e.key.toLowerCase()==="d"){e.preventDefault();duplicate(selId);}
-    else if(f.kind==="tl"&&e.key==="ArrowUp"){e.preventDefault();b.startMin=clamp(b.startMin-state.scale,state.startMin,state.endMin-b.durMin);persist();render();}
-    else if(f.kind==="tl"&&e.key==="ArrowDown"){e.preventDefault();b.startMin=clamp(b.startMin+state.scale,state.startMin,state.endMin-b.durMin);persist();render();}
+    else if(f.kind==="tl"&&e.key==="ArrowUp"){e.preventDefault();b.startMin=clamp(b.startMin-state.scale,state.startMin,state.endMin-b.durMin);persist();render();checkOverlapPrompt(b.id);}
+    else if(f.kind==="tl"&&e.key==="ArrowDown"){e.preventDefault();b.startMin=clamp(b.startMin+state.scale,state.startMin,state.endMin-b.durMin);persist();render();checkOverlapPrompt(b.id);}
   });
 
   // ---------------- init ----------------
