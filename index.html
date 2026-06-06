@@ -455,6 +455,8 @@
 
 <script>
 "use strict";
+/* lz-string 1.5.0 (MIT) — 共有URLの圧縮用 */
+var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",n="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$",e={};function t(r,o){if(!e[r]){e[r]={};for(var n=0;n<r.length;n++)e[r][r.charAt(n)]=n}return e[r][o]}var i={compressToBase64:function(r){if(null==r)return"";var n=i._compress(r,6,function(r){return o.charAt(r)});switch(n.length%4){default:case 0:return n;case 1:return n+"===";case 2:return n+"==";case 3:return n+"="}},decompressFromBase64:function(r){return null==r?"":""==r?null:i._decompress(r.length,32,function(n){return t(o,r.charAt(n))})},compressToUTF16:function(o){return null==o?"":i._compress(o,15,function(o){return r(o+32)})+" "},decompressFromUTF16:function(r){return null==r?"":""==r?null:i._decompress(r.length,16384,function(o){return r.charCodeAt(o)-32})},compressToUint8Array:function(r){for(var o=i.compress(r),n=new Uint8Array(2*o.length),e=0,t=o.length;e<t;e++){var s=o.charCodeAt(e);n[2*e]=s>>>8,n[2*e+1]=s%256}return n},decompressFromUint8Array:function(o){if(null==o)return i.decompress(o);for(var n=new Array(o.length/2),e=0,t=n.length;e<t;e++)n[e]=256*o[2*e]+o[2*e+1];var s=[];return n.forEach(function(o){s.push(r(o))}),i.decompress(s.join(""))},compressToEncodedURIComponent:function(r){return null==r?"":i._compress(r,6,function(r){return n.charAt(r)})},decompressFromEncodedURIComponent:function(r){return null==r?"":""==r?null:(r=r.replace(/ /g,"+"),i._decompress(r.length,32,function(o){return t(n,r.charAt(o))}))},compress:function(o){return i._compress(o,16,function(o){return r(o)})},_compress:function(r,o,n){if(null==r)return"";var e,t,i,s={},u={},a="",p="",c="",l=2,f=3,h=2,d=[],m=0,v=0;for(i=0;i<r.length;i+=1)if(a=r.charAt(i),Object.prototype.hasOwnProperty.call(s,a)||(s[a]=f++,u[a]=!0),p=c+a,Object.prototype.hasOwnProperty.call(s,p))c=p;else{if(Object.prototype.hasOwnProperty.call(u,c)){if(c.charCodeAt(0)<256){for(e=0;e<h;e++)m<<=1,v==o-1?(v=0,d.push(n(m)),m=0):v++;for(t=c.charCodeAt(0),e=0;e<8;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}else{for(t=1,e=0;e<h;e++)m=m<<1|t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t=0;for(t=c.charCodeAt(0),e=0;e<16;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}0==--l&&(l=Math.pow(2,h),h++),delete u[c]}else for(t=s[c],e=0;e<h;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;0==--l&&(l=Math.pow(2,h),h++),s[p]=f++,c=String(a)}if(""!==c){if(Object.prototype.hasOwnProperty.call(u,c)){if(c.charCodeAt(0)<256){for(e=0;e<h;e++)m<<=1,v==o-1?(v=0,d.push(n(m)),m=0):v++;for(t=c.charCodeAt(0),e=0;e<8;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}else{for(t=1,e=0;e<h;e++)m=m<<1|t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t=0;for(t=c.charCodeAt(0),e=0;e<16;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}0==--l&&(l=Math.pow(2,h),h++),delete u[c]}else for(t=s[c],e=0;e<h;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;0==--l&&(l=Math.pow(2,h),h++)}for(t=2,e=0;e<h;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;for(;;){if(m<<=1,v==o-1){d.push(n(m));break}v++}return d.join("")},decompress:function(r){return null==r?"":""==r?null:i._decompress(r.length,32768,function(o){return r.charCodeAt(o)})},_decompress:function(o,n,e){var t,i,s,u,a,p,c,l=[],f=4,h=4,d=3,m="",v=[],g={val:e(0),position:n,index:1};for(t=0;t<3;t+=1)l[t]=t;for(s=0,a=Math.pow(2,2),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;switch(s){case 0:for(s=0,a=Math.pow(2,8),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;c=r(s);break;case 1:for(s=0,a=Math.pow(2,16),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;c=r(s);break;case 2:return""}for(l[3]=c,i=c,v.push(c);;){if(g.index>o)return"";for(s=0,a=Math.pow(2,d),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;switch(c=s){case 0:for(s=0,a=Math.pow(2,8),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;l[h++]=r(s),c=h-1,f--;break;case 1:for(s=0,a=Math.pow(2,16),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;l[h++]=r(s),c=h-1,f--;break;case 2:return v.join("")}if(0==f&&(f=Math.pow(2,d),d++),l[c])m=l[c];else{if(c!==h)return null;m=i+i.charAt(0)}v.push(m),l[h++]=i+m.charAt(0),i=m,0==--f&&(f=Math.pow(2,d),d++)}}};return i}();
 (function(){
   const GUT=52, LANE_W=196, HEAD=38, TAIL=24, PAD=12, MAXTL=10;
   const KEY="program-yasan-v1", HKEY="program-yasan-history";
@@ -547,8 +549,42 @@
     saveLocal();render();toast("やり直しました");
   }
   function load(){try{const r=localStorage.getItem(KEY);if(r)state=normalize(JSON.parse(r));}catch(e){}}
+
+  // ---- 共有URL用：コンパクト表現（キー名やidを省きURLを短く） ----
+  function colIdx(c){const i=COLORS.indexOf((c||"").toUpperCase());return i<0?COLORS.length-1:i;}
+  function colOf(i){return COLORS[(typeof i==="number"&&i>=0&&i<COLORS.length)?i:COLORS.length-1];}
+  function toCompact(s){
+    return [1, s.title||"", s.scale, s.startMin, s.endMin, s.ppm, s.fontScale, s.showDur?1:0, colIdx(s.bg),
+      (s.timelines||[]).map(t=>[t.name||"", t.width||0, (t.blocks||[]).map(b=>[b.startMin,b.durMin,b.label||"",colIdx(b.color)])]),
+      (s.parking||[]).map(p=>[p.label||"",colIdx(p.color),p.durMin])];
+  }
+  function fromCompact(a){
+    return {
+      title:a[1]||"", scale:a[2], startMin:a[3], endMin:a[4], ppm:a[5], fontScale:a[6], showDur:!!a[7], bg:colOf(a[8]),
+      timelines:(a[9]||[]).map((t,ti)=>({id:"t"+(ti+1), name:t[0]||"", width:t[1]||undefined,
+        blocks:(t[2]||[]).map(b=>({id:gid("b"), startMin:b[0], durMin:b[1], label:b[2]||"", color:colOf(b[3])}))})),
+      parking:(a[10]||[]).map(p=>({id:gid("p"), label:p[0]||"", color:colOf(p[1]), durMin:p[2]}))
+    };
+  }
+  // 共有URL文字列を生成（短く・端末を選ばず開けるように圧縮）
+  function shareData(){return LZString.compressToEncodedURIComponent(JSON.stringify(toCompact(state)));}
+
   function fromHash(){
     const h=location.hash||"";
+    // 新形式（圧縮）: #z=
+    if(h.indexOf("#z=")===0){
+      try{
+        let b=h.slice(3);
+        try{b=decodeURIComponent(b);}catch(e){}            // 一部アプリが%エンコードした場合に戻す
+        const j=LZString.decompressFromEncodedURIComponent(b);
+        if(j){
+          state=normalize(fromCompact(JSON.parse(j)));
+          viewMode=true;
+          return true;
+        }
+      }catch(e){}
+    }
+    // 旧形式（base64 JSON）: #d=  （以前に共有されたURLも開けるように残す）
     if(h.indexOf("#d=")===0){
       try{
         let b=h.slice(3);
@@ -1259,8 +1295,7 @@
     },
     url(){
       try{
-        const data=btoa(unescape(encodeURIComponent(JSON.stringify(state)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
-        const link=location.origin+location.pathname+"#d="+data;
+        const link=location.origin+location.pathname+"#z="+shareData();
         if(navigator.clipboard&&navigator.clipboard.writeText)
           navigator.clipboard.writeText(link).then(()=>toast("URLをコピーしました"),()=>prompt("このURLをコピーしてください",link));
         else prompt("このURLをコピーしてください",link);
