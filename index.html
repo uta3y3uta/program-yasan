@@ -27,10 +27,16 @@
     display:flex; align-items:center; gap:10px; padding:0 12px;
     background:var(--panel); box-shadow:var(--shadow); overflow-x:auto;
   }
-  .brand{display:flex; align-items:center; gap:8px; font-weight:800; font-size:16px; padding-right:4px; white-space:nowrap}
+  .brand{display:flex; align-items:center; gap:8px; font-weight:800; font-size:16px; padding-right:2px; white-space:nowrap;flex:none}
   .brand .logo{width:30px;height:30px;border-radius:9px;background:var(--accent);display:grid;place-items:center;flex:none}
   .brand .logo svg{width:18px;height:18px}
-  .spacer{flex:1}
+  .ptitle{
+    font-size:15px;font-weight:800;color:var(--ink);border:none;background:#f3f5f9;border-radius:10px;
+    padding:9px 12px;min-width:150px;max-width:300px;outline:none;flex:none
+  }
+  .ptitle:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--accent)}
+  .ptitle::placeholder{color:#b9c1ce;font-weight:700}
+  .spacer{flex:1;min-width:6px}
   .iconbtn{
     width:42px;height:42px;border:none;border-radius:12px;background:#f3f5f9;color:var(--ink);
     display:grid;place-items:center;cursor:pointer;transition:.15s; position:relative;flex:none;
@@ -76,16 +82,10 @@
   .swatch svg{width:16px;height:16px;opacity:0;transition:.15s}
   .swatch:hover svg{opacity:.55}
 
-  .stagewrap{flex:1;position:relative;overflow:auto;padding:18px 20px 40px}
-  .titlebar{display:flex;align-items:center;gap:8px;margin:0 auto 14px;max-width:max-content}
-  .ptitle{
-    font-size:20px;font-weight:800;color:var(--ink);border:none;background:transparent;text-align:center;
-    padding:6px 10px;border-radius:10px;min-width:240px;outline:none
-  }
-  .ptitle:focus{background:#fff;box-shadow:var(--shadow-s)}
-  .ptitle::placeholder{color:#c2c9d4}
-
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .stagewrap{flex:1;position:relative;overflow:auto;padding:18px 20px 24px}
   .stage{margin:0 auto;width:max-content}
+  .stagerow{display:flex;align-items:flex-start;gap:12px}
   .track{position:relative;display:flex;align-items:flex-start;gap:10px;background:var(--panel);border-radius:16px;box-shadow:var(--shadow);padding:12px}
 
   .gutter{display:flex;flex-direction:column;flex:none;width:52px}
@@ -93,8 +93,14 @@
   .gbody{position:relative}
   .tick{position:absolute;right:6px;color:var(--muted);font-size:11px;font-weight:700;white-space:nowrap}
 
-  .timeline{display:flex;flex-direction:column;flex:none;width:196px}
-  .tl-head{display:flex;align-items:center;gap:4px;padding:0 2px 6px}
+  .timeline{display:flex;flex-direction:column;flex:none;width:196px;transition:opacity .12s}
+  .timeline.dragging{opacity:.55}
+  .timeline.dragging .lane{outline:2px dashed var(--accent);outline-offset:-2px}
+  .tl-head{display:flex;align-items:center;gap:3px;padding:0 2px 6px}
+  .tl-grip{width:22px;height:30px;border:none;border-radius:8px;background:transparent;color:var(--muted);cursor:grab;display:grid;place-items:center;flex:none;touch-action:none}
+  .tl-grip:hover{background:#eef2f7;color:var(--accent-d)}
+  .tl-grip:active{cursor:grabbing}
+  .tl-grip svg{width:15px;height:15px}
   .tl-name{flex:1;min-width:0;border:none;background:#f3f5f9;border-radius:9px;padding:6px 8px;font-size:13px;font-weight:800;color:var(--ink);outline:none;text-align:center}
   .tl-name:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--accent)}
   .tl-name::placeholder{color:#b9c1ce}
@@ -103,6 +109,7 @@
   .tl-del svg{width:15px;height:15px}
 
   .lane{position:relative;border-radius:10px;background:#fbfcfe;touch-action:none}
+  .lane.drophi{box-shadow:inset 0 0 0 3px var(--accent)}
 
   .block{
     position:absolute;left:5px;right:5px;border-radius:11px;box-shadow:var(--shadow-s);cursor:grab;
@@ -125,43 +132,69 @@
   .swatchpop{position:absolute;left:100%;top:46px;margin-left:7px;display:flex;flex-wrap:wrap;gap:6px;width:140px;background:#fff;padding:8px;border-radius:12px;box-shadow:var(--shadow);z-index:9}
   .swatchpop b{width:24px;height:24px;border-radius:7px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
 
-  /* add-timeline tile */
-  .addcol{display:flex;flex-direction:column;flex:none;width:60px}
-  .addcol .sp{flex:none}
-  .addbtn{flex:1;min-height:120px;border:2px dashed #cdd5e1;border-radius:12px;background:#fafbfd;color:#9aa4b4;
+  /* external add-timeline tile (outside the white frame) */
+  .addouter{display:flex;flex-direction:column;flex:none;width:64px}
+  .addbtn{width:100%;border:2px dashed #cdd5e1;border-radius:14px;background:rgba(255,255,255,.55);color:#9aa4b4;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-weight:800;font-size:11px}
   .addbtn:hover{border-color:var(--accent);color:var(--accent-d);background:#f4f9ff}
   .addbtn svg{width:24px;height:24px}
 
-  .hint{position:absolute;top:42%;left:0;right:0;margin:auto;width:max-content;color:var(--muted);font-weight:700;
-    display:flex;align-items:center;gap:10px;font-size:14px;pointer-events:none}
-  .hint svg{width:26px;height:26px}
+  .ghostchip{position:fixed;z-index:60;min-width:72px;max-width:150px;height:34px;border-radius:11px;box-shadow:var(--shadow);
+    pointer-events:none;opacity:.94;display:flex;align-items:center;justify-content:center;gap:4px;padding:0 10px;
+    color:rgba(0,0,0,.45);font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden}
 
-  .ghostchip{position:fixed;z-index:60;width:72px;height:32px;border-radius:11px;box-shadow:var(--shadow);pointer-events:none;opacity:.92;display:grid;place-items:center;color:rgba(0,0,0,.4)}
+  /* ---------- holding tray (おきば) ---------- */
+  .tray{flex:none;background:var(--panel);box-shadow:0 -4px 16px rgba(40,60,90,.08);border-top:1px solid var(--line);
+    padding:8px 14px;display:flex;align-items:stretch;gap:12px;min-height:78px}
+  .tray.drophi{background:#eef6ff}
+  .trayhead{font-size:11px;color:var(--muted);font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;flex:none;width:46px}
+  .trayhead svg{width:18px;height:18px}
+  .traybody{flex:1;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;min-height:54px;max-height:128px;overflow:auto;padding:2px}
+  .trayhint{color:var(--muted);font-weight:700;font-size:12px;opacity:.8;padding:18px 4px;align-self:center}
+  .chip{position:relative;min-width:96px;max-width:160px;height:42px;border-radius:11px;box-shadow:var(--shadow-s);
+    display:flex;align-items:center;padding:0 9px;cursor:grab;border:2px solid rgba(255,255,255,.5);touch-action:none}
+  .chip:active{cursor:grabbing}
+  .chip.sel{box-shadow:0 0 0 3px var(--accent),var(--shadow)}
+  .clabel{flex:1;min-width:0;font-size:12px;font-weight:800;line-height:1.15;outline:none;overflow:hidden;word-break:break-word;cursor:text;max-height:38px}
+  .clabel:empty:before{content:"カード";opacity:.5;font-weight:700}
+  .cdel{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border:none;border-radius:50%;background:#fff;color:#e03131;
+    box-shadow:var(--shadow-s);cursor:pointer;display:none;align-items:center;justify-content:center;font-size:11px;font-weight:900;line-height:1}
+  .chip:hover .cdel,.chip.sel .cdel{display:flex}
 
   /* ---------- menus ---------- */
-  .menu{position:fixed;top:64px;background:#fff;border-radius:14px;box-shadow:var(--shadow);z-index:50;padding:8px;min-width:230px;display:none}
+  .menu{position:fixed;top:64px;background:#fff;border-radius:14px;box-shadow:var(--shadow);z-index:50;padding:8px;min-width:236px;display:none}
   .menu.open{display:block;animation:pop .12s ease}
   @keyframes pop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
   .menu .row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:700;font-size:14px}
   .menu .row:hover{background:#f3f5f9}
-  .menu .row svg{width:19px;height:19px;color:var(--accent-d)}
+  .menu .row svg{width:19px;height:19px;color:var(--accent-d);flex:none}
   .menu .sep{height:1px;background:var(--line);margin:6px 6px}
   .menu .ttl{font-size:11px;color:var(--muted);font-weight:800;padding:6px 12px 2px;letter-spacing:.4px}
   .settings .field{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 12px}
   .settings label{font-weight:700;font-size:13px;color:var(--muted)}
   .settings input[type=time]{border:1px solid var(--line);border-radius:9px;padding:6px 8px;font-size:14px;font-weight:700;color:var(--ink)}
 
-  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#2b3445;color:#fff;
+  .histlist{max-height:268px;overflow:auto}
+  .histrow{display:flex;align-items:center;border-radius:10px}
+  .histrow:hover{background:#f3f5f9}
+  .histmain{flex:1;padding:8px 12px;cursor:pointer;min-width:0}
+  .histmain .ht{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .histmain .hd{font-size:11px;color:var(--muted);font-weight:700;margin-top:1px}
+  .histdel{width:30px;height:30px;border:none;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-weight:900;font-size:13px;margin-right:4px;flex:none}
+  .histdel:hover{background:#ffe3e3;color:#e03131}
+  .histempty{padding:14px;color:var(--muted);font-weight:700;font-size:13px;text-align:center}
+
+  .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);background:#2b3445;color:#fff;
     padding:11px 18px;border-radius:12px;font-weight:700;font-size:14px;box-shadow:var(--shadow);z-index:80;opacity:0;transition:.25s;pointer-events:none}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
   /* hide chrome for capture / print */
   body.capturing .no-capture{display:none !important}
   @media print{
-    .topbar,.palette,.menu,.toast,.ghostchip,.hint,.actionbar,.swatchpop,.no-capture{display:none !important}
+    .topbar,.palette,.menu,.toast,.ghostchip,.actionbar,.swatchpop,.tray,.addouter,.no-capture{display:none !important}
     body{overflow:visible;background:#fff}
     .workspace{position:static}
+    .main{display:block}
     .stagewrap{overflow:visible;padding:0}
     .track{box-shadow:none}
     .block.sel{box-shadow:var(--shadow-s) !important}
@@ -176,6 +209,7 @@
     <span class="logo"><svg viewBox="0 0 100 100"><rect x="22" y="20" width="56" height="13" rx="6.5" fill="#fff"/><rect x="22" y="43" width="42" height="13" rx="6.5" fill="#fff"/><rect x="22" y="66" width="30" height="13" rx="6.5" fill="#fff"/></svg></span>
     <span>プログラム屋さん</span>
   </div>
+  <input class="ptitle" id="ptitle" placeholder="タイトル" maxlength="60" />
 
   <div class="spacer"></div>
 
@@ -206,10 +240,10 @@
     <span class="tip">出力</span>
   </button>
 
-  <!-- save -->
-  <button class="iconbtn primary" id="btnSave" aria-label="保存">
+  <!-- save / history -->
+  <button class="iconbtn primary" id="btnSave" aria-label="保存・履歴">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
-    <span class="tip">保存</span>
+    <span class="tip">保存・履歴</span>
   </button>
 </div>
 
@@ -219,14 +253,22 @@
     <div class="ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17" cy="12" r="2.5"/><circle cx="6.5" cy="10.5" r="2.5"/><circle cx="9" cy="16" r="2.5"/><path d="M12 2a10 10 0 1 0 0 20 2 2 0 0 0 2-2 2 2 0 0 1 2-2h1a4 4 0 0 0 4-4 10 10 0 0 0-9-10z"/></svg>素材</div>
   </div>
 
-  <div class="stagewrap" id="stagewrap">
-    <div class="titlebar"><input class="ptitle" id="ptitle" placeholder="タイトルを入力" maxlength="60" /></div>
-    <div class="stage" id="stage">
-      <div class="track" id="track"></div>
+  <div class="main">
+    <div class="stagewrap" id="stagewrap">
+      <div class="stage" id="stage">
+        <div class="stagerow">
+          <div class="track" id="track"></div>
+          <div class="addouter no-capture" id="addOuter"></div>
+        </div>
+      </div>
     </div>
-    <div class="hint" id="hint">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M5 12l5-5M5 12l5 5"/></svg>
-      左の色をカードにしてタイムラインへドラッグ
+
+    <div class="tray no-capture" id="tray">
+      <div class="trayhead">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v6H4z"/><path d="M4 14h16v6H4z"/></svg>
+        おきば
+      </div>
+      <div class="traybody" id="trayBody"></div>
     </div>
   </div>
 </div>
@@ -237,6 +279,7 @@
   <div class="row" data-act="print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>印刷</div>
   <div class="row" data-act="pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg>PDFで保存</div>
   <div class="row" data-act="jpeg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>JPEG出力</div>
+  <div class="row" data-act="png"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 13l-4-4-7 7"/><path d="M3 18l4-4 3 3"/></svg>PNG出力</div>
   <div class="sep"></div>
   <div class="ttl">データ</div>
   <div class="row" data-act="jsonSave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>JSON保存</div>
@@ -244,7 +287,16 @@
   <div class="row" data-act="excel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>Excel出力</div>
   <div class="row" data-act="gsheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>Googleスプレッドシート</div>
   <div class="sep"></div>
-  <div class="row" data-act="save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>保存</div>
+  <div class="row" data-act="url"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg>URLでシェア</div>
+</div>
+
+<!-- ============ SAVE / HISTORY MENU ============ -->
+<div class="menu" id="saveMenu">
+  <div class="row" data-sact="snap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>このプログラムを保存</div>
+  <div class="row" data-sact="jsonLoad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M8 7l4-4 4 4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>JSON読み込み</div>
+  <div class="sep"></div>
+  <div class="ttl">りれき（タップで呼び出し）</div>
+  <div class="histlist" id="histList"></div>
 </div>
 
 <!-- ============ SETTINGS ============ -->
@@ -260,17 +312,18 @@
 <script>
 "use strict";
 (function(){
-  const GUT=52, LANE_W=196, HEAD=38, TAIL=24, MAXTL=10;
-  const KEY="program-yasan-v1";
+  const GUT=52, LANE_W=196, HEAD=38, TAIL=24, PAD=12, MAXTL=10;
+  const KEY="program-yasan-v1", HKEY="program-yasan-history";
   const COLORS=["#FF8787","#FFA94D","#FFD43B","#A9E34B","#69DB7C","#38D9A9","#4DABF7","#748FFC","#DA77F2","#F783AC","#CED4DA","#FFFFFF"];
 
   let state=defaultState();
-  let selId=null;
+  let selId=null, clip=null, reorderId=null, dropHiEl=null;
 
-  function defaultState(){return {title:"",scale:30,startMin:540,endMin:1080,ppm:2,timelines:[{id:"t1",name:"",blocks:[]}],seq:2};}
+  function defaultState(){return {title:"",scale:30,startMin:540,endMin:1080,ppm:2,timelines:[{id:"t1",name:"",blocks:[]}],parking:[]};}
 
   const $=s=>document.querySelector(s);
-  const track=$("#track"), hint=$("#hint"), palette=$("#palette"), ptitle=$("#ptitle"), toastEl=$("#toast");
+  const track=$("#track"), palette=$("#palette"), ptitle=$("#ptitle"), toastEl=$("#toast");
+  const addOuter=$("#addOuter"), tray=$("#tray"), trayBody=$("#trayBody");
 
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const snap=m=>Math.round(m/state.scale)*state.scale;
@@ -279,15 +332,22 @@
   function parseTime(v){const[a,b]=v.split(":").map(Number);return a*60+b;}
   function lum(hex){const c=hex.replace("#","");return (0.299*parseInt(c.slice(0,2),16)+0.587*parseInt(c.slice(2,4),16)+0.114*parseInt(c.slice(4,6),16))/255;}
   function inkOn(hex){return lum(hex)>0.62?"#33405a":"#ffffff";}
-  function uid(p){return p+(state.seq++)+Math.random().toString(36).slice(2,5);}
+  function gid(p){return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
   function toast(m){toastEl.textContent=m;toastEl.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>toastEl.classList.remove("show"),2200);}
   function safeName(){return (state.title||"プログラム").replace(/[\\\/:*?"<>|]/g,"_");}
+  function fmtDate(ts){const d=new Date(ts);const p=n=>String(n).padStart(2,"0");return (d.getMonth()+1)+"/"+d.getDate()+" "+p(d.getHours())+":"+p(d.getMinutes());}
 
   const posPx=m=>(m-state.startMin)*state.ppm;
   const laneLen=()=>(state.endMin-state.startMin)*state.ppm+TAIL;
 
-  function locate(id){for(const tl of state.timelines){const i=tl.blocks.findIndex(b=>b.id===id);if(i>=0)return{tl,b:tl.blocks[i],i};}return null;}
+  function findCard(id){
+    for(const tl of state.timelines){const i=tl.blocks.findIndex(b=>b.id===id);if(i>=0)return{kind:"tl",tl,b:tl.blocks[i],i};}
+    const pi=state.parking.findIndex(c=>c.id===id);
+    if(pi>=0)return{kind:"park",b:state.parking[pi],i:pi};
+    return null;
+  }
   const blockEl=id=>track.querySelector('.block[data-id="'+id+'"]');
+  const chipEl=id=>trayBody.querySelector('.chip[data-id="'+id+'"]');
 
   function normalize(s){
     s=Object.assign(defaultState(),s||{});
@@ -295,14 +355,28 @@
       if(Array.isArray(s.blocks))s.timelines=[{id:"t1",name:"",blocks:s.blocks}];
       else s.timelines=[{id:"t1",name:"",blocks:[]}];
     }
-    delete s.blocks; delete s.orientation;
-    s.timelines.forEach((tl,i)=>{if(!tl.id)tl.id="t"+(i+1);if(typeof tl.name!=="string")tl.name="";if(!Array.isArray(tl.blocks))tl.blocks=[];});
+    delete s.blocks; delete s.orientation; delete s.seq;
+    s.timelines.forEach((tl,i)=>{if(!tl.id)tl.id="t"+(i+1);if(typeof tl.name!=="string")tl.name="";if(!Array.isArray(tl.blocks))tl.blocks=[];
+      tl.blocks.forEach(b=>{if(!b.id)b.id=gid("b");if(typeof b.label!=="string")b.label="";if(!b.color)b.color="#4DABF7";});});
+    if(!Array.isArray(s.parking))s.parking=[];
+    s.parking=s.parking.filter(c=>c&&typeof c==="object").map(c=>({id:c.id||gid("p"),label:typeof c.label==="string"?c.label:"",color:c.color||"#4DABF7",durMin:c.durMin||30}));
     if(!s.ppm)s.ppm=2;
     if([5,10,30,60].indexOf(s.scale)<0)s.scale=30;
     return s;
   }
   function persist(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
   function load(){try{const r=localStorage.getItem(KEY);if(r)state=normalize(JSON.parse(r));}catch(e){}}
+  function fromHash(){
+    const h=location.hash||"";
+    if(h.indexOf("#d=")===0){
+      try{const j=decodeURIComponent(escape(atob(h.slice(3))));state=normalize(JSON.parse(j));return true;}catch(e){}
+    }
+    return false;
+  }
+
+  // ---------------- drop highlight ----------------
+  function setDropHi(el){if(dropHiEl===el)return;if(dropHiEl)dropHiEl.classList.remove("drophi");dropHiEl=el;if(el)el.classList.add("drophi");}
+  function clearDropHi(){if(dropHiEl){dropHiEl.classList.remove("drophi");dropHiEl=null;}}
 
   // ---------------- render ----------------
   function render(){
@@ -318,8 +392,12 @@
 
     // timelines
     state.timelines.forEach(tl=>{
-      const col=document.createElement("div"); col.className="timeline";
+      const col=document.createElement("div"); col.className="timeline"+(tl.id===reorderId?" dragging":"");
       const head=document.createElement("div"); head.className="tl-head"; head.style.height=HEAD+"px";
+      const grip=document.createElement("button"); grip.className="tl-grip no-capture"; grip.title="ドラッグで並べ替え";
+      grip.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>';
+      grip.addEventListener("pointerdown",e=>onGripDown(e,tl));
+      head.appendChild(grip);
       const nm=document.createElement("input"); nm.className="tl-name"; nm.placeholder="名称"; nm.value=tl.name||""; nm.maxLength=20;
       nm.addEventListener("input",()=>{tl.name=nm.value;persist();});
       nm.addEventListener("pointerdown",e=>e.stopPropagation());
@@ -331,7 +409,7 @@
         head.appendChild(del);
       }
       const lane=document.createElement("div"); lane.className="lane"; lane.dataset.tl=tl.id;
-      lane.style.height=L+"px"; lane.style.width=(LANE_W-0)+"px";
+      lane.style.height=L+"px"; lane.style.width=LANE_W+"px";
       lane.style.backgroundImage=
         "repeating-linear-gradient(to bottom,var(--line) 0 1px,transparent 1px "+(state.scale*state.ppm)+"px),"+
         "repeating-linear-gradient(to bottom,var(--hour) 0 1px,transparent 1px "+(60*state.ppm)+"px)";
@@ -340,18 +418,21 @@
       col.appendChild(head); col.appendChild(lane); track.appendChild(col);
     });
 
-    // add-timeline tile
+    // external add-timeline tile (outside the white frame)
+    addOuter.innerHTML="";
     if(state.timelines.length<MAXTL){
-      const ac=document.createElement("div"); ac.className="addcol no-capture";
-      const sp=document.createElement("div"); sp.className="sp"; sp.style.height=HEAD+"px";
+      const sp=document.createElement("div"); sp.style.height=(HEAD+PAD)+"px"; sp.style.flex="none";
       const btn=document.createElement("div"); btn.className="addbtn"; btn.style.height=L+"px";
       btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>追加';
       btn.onclick=addTimeline;
-      ac.appendChild(sp); ac.appendChild(btn); track.appendChild(ac);
+      addOuter.appendChild(sp); addOuter.appendChild(btn);
     }
 
-    const empty=state.timelines.every(t=>t.blocks.length===0);
-    hint.style.display=empty?"flex":"none";
+    // tray
+    trayBody.innerHTML="";
+    if(!state.parking.length){const h=document.createElement("div");h.className="trayhint";h.textContent="カードをここにドラッグすると一時的に置いておけます";trayBody.appendChild(h);}
+    else state.parking.forEach(c=>trayBody.appendChild(buildChip(c)));
+
     ptitle.value=state.title;
     $("#zoom").value=state.ppm;
     [...document.querySelectorAll("#segScale button")].forEach(x=>x.classList.toggle("active",+x.dataset.s===state.scale));
@@ -374,7 +455,7 @@
     if(b.id===selId) el.appendChild(buildActionBar(b));
     el.addEventListener("pointerdown",e=>onBlockDown(e,b));
     h.addEventListener("pointerdown",e=>onHandleDown(e,b));
-    lb.addEventListener("dblclick",e=>{e.stopPropagation();startEdit(lb,b);});
+    lb.addEventListener("dblclick",e=>{e.stopPropagation();startEditEl(lb,v=>{b.label=v;});});
     return el;
   }
   function buildActionBar(b){
@@ -382,8 +463,8 @@
     bar.addEventListener("pointerdown",e=>e.stopPropagation());
     const mk=(svg,cls,fn)=>{const x=document.createElement("button");x.className=cls||"";x.innerHTML=svg;x.onclick=ev=>{ev.stopPropagation();fn();};return x;};
     bar.appendChild(mk('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1.6"/><circle cx="17" cy="12" r="1.6"/><circle cx="7" cy="10" r="1.6"/><circle cx="9.5" cy="16" r="1.6"/><path d="M12 2a10 10 0 1 0 0 20 2 2 0 0 0 2-2 2 2 0 0 1 2-2h1a4 4 0 0 0 4-4 10 10 0 0 0-9-10z"/></svg>',"",()=>toggleSwatch(b)));
-    bar.appendChild(mk('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',"",()=>duplicate(b)));
-    bar.appendChild(mk('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>',"del",()=>removeBlock(b.id)));
+    bar.appendChild(mk('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',"",()=>duplicate(b.id)));
+    bar.appendChild(mk('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>',"del",()=>removeCard(b.id)));
     return bar;
   }
   function toggleSwatch(b){
@@ -395,50 +476,119 @@
     el.appendChild(pop);
   }
 
+  function buildChip(c){
+    const el=document.createElement("div"); el.className="chip"+(c.id===selId?" sel":""); el.dataset.id=c.id;
+    el.style.background=c.color; el.style.color=inkOn(c.color);
+    const lb=document.createElement("div"); lb.className="clabel"; lb.textContent=c.label||"";
+    const del=document.createElement("button"); del.className="cdel no-capture"; del.textContent="✕"; del.title="削除";
+    del.onclick=ev=>{ev.stopPropagation();removeCard(c.id);};
+    el.appendChild(lb); el.appendChild(del);
+    el.addEventListener("pointerdown",e=>onChipDown(e,c));
+    lb.addEventListener("dblclick",e=>{e.stopPropagation();startEditEl(lb,v=>{c.label=v;});});
+    return el;
+  }
+
   // ---------------- editing ----------------
-  function startEdit(lb,b){
+  function startEditEl(lb,onDone){
     if(lb.isContentEditable)return;
     lb.contentEditable="true"; lb.focus();
     const r=document.createRange(); r.selectNodeContents(lb);
     const sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
-    const done=()=>{lb.contentEditable="false";b.label=lb.textContent.trim();persist();render();};
+    const done=()=>{lb.contentEditable="false";onDone(lb.textContent.trim());persist();render();};
     lb.addEventListener("blur",done,{once:true});
     lb.addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();lb.blur();}if(e.key==="Escape"){e.preventDefault();lb.blur();}});
   }
 
-  // ---------------- block ops ----------------
+  // ---------------- card ops ----------------
   function addBlock(tlId,startMin,color){
     const tl=state.timelines.find(t=>t.id===tlId); if(!tl)return;
     const def=Math.max(state.scale,Math.ceil(30/state.scale)*state.scale);
     const s=clamp(snap(startMin),state.startMin,state.endMin-state.scale);
     const d=Math.min(def,state.endMin-s);
-    const b={id:uid("b"),startMin:s,durMin:d,label:"",color:color||"#4DABF7"};
+    const b={id:gid("b"),startMin:s,durMin:d,label:"",color:color||"#4DABF7"};
     tl.blocks.push(b); selId=b.id; persist(); render();
   }
-  function duplicate(b){
-    const loc=locate(b.id); if(!loc)return;
-    const nb=Object.assign({},b,{id:uid("b")});
-    nb.startMin=clamp(nb.startMin+nb.durMin,state.startMin,state.endMin-nb.durMin);
-    loc.tl.blocks.push(nb); selId=nb.id; persist(); render();
+  function addParkedCard(color){
+    const c={id:gid("p"),label:"",color:color||"#4DABF7",durMin:Math.max(state.scale,30)};
+    state.parking.push(c); selId=c.id; persist(); render();
   }
-  function removeBlock(id){const loc=locate(id);if(!loc)return;loc.tl.blocks.splice(loc.i,1);if(selId===id)selId=null;persist();render();}
-  function reassign(id,tlId){const loc=locate(id);const tgt=state.timelines.find(t=>t.id===tlId);if(!loc||!tgt||tgt===loc.tl)return;loc.tl.blocks.splice(loc.i,1);tgt.blocks.push(loc.b);}
+  function duplicate(id){
+    const f=findCard(id); if(!f)return;
+    if(f.kind==="tl"){
+      const nb=Object.assign({},f.b,{id:gid("b")});
+      nb.startMin=clamp(nb.startMin+nb.durMin,state.startMin,state.endMin-nb.durMin);
+      f.tl.blocks.push(nb); selId=nb.id;
+    }else{
+      const nc={id:gid("p"),label:f.b.label,color:f.b.color,durMin:f.b.durMin};
+      state.parking.push(nc); selId=nc.id;
+    }
+    persist(); render();
+  }
+  function removeCard(id){
+    const f=findCard(id); if(!f)return;
+    if(f.kind==="tl")f.tl.blocks.splice(f.i,1); else state.parking.splice(f.i,1);
+    if(selId===id)selId=null; persist(); render();
+  }
+  function reassign(id,tlId){
+    const f=findCard(id); const tgt=state.timelines.find(t=>t.id===tlId);
+    if(!f||f.kind!=="tl"||!tgt||tgt===f.tl)return;
+    f.tl.blocks.splice(f.i,1); tgt.blocks.push(f.b);
+  }
+  function parkBlock(id){
+    const f=findCard(id); if(!f||f.kind!=="tl")return;
+    f.tl.blocks.splice(f.i,1);
+    state.parking.push({id:f.b.id,label:f.b.label,color:f.b.color,durMin:f.b.durMin});
+    persist(); render();
+  }
+  function unparkTo(id,tlId,startMin){
+    const f=findCard(id); if(!f||f.kind!=="park")return;
+    const tl=state.timelines.find(t=>t.id===tlId); if(!tl)return;
+    state.parking.splice(f.i,1);
+    const s=clamp(snap(startMin),state.startMin,state.endMin-state.scale);
+    const d=Math.min(f.b.durMin||state.scale,state.endMin-s);
+    tl.blocks.push({id:f.b.id,startMin:s,durMin:d,label:f.b.label,color:f.b.color});
+    selId=f.b.id; persist(); render();
+  }
+  function pasteClip(){
+    if(!clip)return;
+    let tl=clip.tlId&&state.timelines.find(t=>t.id===clip.tlId);
+    if(!tl)tl=state.timelines[0]; if(!tl)return;
+    const dur=clip.durMin||state.scale;
+    let s=clip.startMin!=null?clip.startMin+dur:state.startMin;
+    s=clamp(snap(s),state.startMin,state.endMin-dur);
+    const b={id:gid("b"),startMin:s,durMin:Math.min(dur,state.endMin-s),label:clip.label||"",color:clip.color||"#4DABF7"};
+    tl.blocks.push(b); selId=b.id; persist(); render(); toast("貼り付けました");
+  }
   function select(id){selId=id;render();}
 
   function addTimeline(){
     if(state.timelines.length>=MAXTL){toast("タイムラインは最大"+MAXTL+"個までです");return;}
-    state.timelines.push({id:uid("t"),name:"",blocks:[]}); persist(); render();
+    state.timelines.push({id:gid("t"),name:"",blocks:[]}); persist(); render();
   }
   function deleteTimeline(id){
     if(state.timelines.length<=1){toast("タイムラインは1つ必要です");return;}
     const tl=state.timelines.find(t=>t.id===id); if(!tl)return;
     if(tl.blocks.length && !confirm("このタイムラインとカードを削除しますか？"))return;
     state.timelines=state.timelines.filter(t=>t.id!==id);
-    if(selId&&!locate(selId))selId=null;
+    if(selId&&!findCard(selId))selId=null;
     persist(); render();
   }
+  function reorderTo(dragId,clientX){
+    const cols=[...track.querySelectorAll(".timeline")];
+    const order=state.timelines.map(t=>t.id);
+    let pos=cols.length;
+    for(let i=0;i<cols.length;i++){const r=cols[i].getBoundingClientRect();if(clientX<r.left+r.width/2){pos=i;break;}}
+    const from=order.indexOf(dragId); if(from<0)return false;
+    order.splice(from,1);
+    const insert=pos>from?pos-1:pos;
+    order.splice(insert,0,dragId);
+    const changed=order.some((id,i)=>id!==state.timelines[i].id);
+    if(!changed)return false;
+    state.timelines.sort((a,b)=>order.indexOf(a.id)-order.indexOf(b.id));
+    return true;
+  }
 
-  // ---------------- helpers: lane geometry ----------------
+  // ---------------- geometry ----------------
   function laneAtPoint(x,y){
     for(const lane of track.querySelectorAll(".lane")){
       const r=lane.getBoundingClientRect();
@@ -446,6 +596,7 @@
     }
     return null;
   }
+  function trayAtPoint(x,y){const r=tray.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;}
   const minAt=(y,top)=>state.startMin+(y-top)/state.ppm;
 
   // ---------------- pointer: create from palette ----------------
@@ -454,16 +605,19 @@
     const chip=document.createElement("div"); chip.className="ghostchip"; chip.style.background=color; chip.style.color=inkOn(color);
     chip.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
     document.body.appendChild(chip);
-    const move=ev=>{chip.style.left=(ev.clientX-36)+"px";chip.style.top=(ev.clientY-16)+"px";}; move(e);
+    const move=ev=>{chip.style.left=(ev.clientX-36)+"px";chip.style.top=(ev.clientY-16)+"px";
+      if(trayAtPoint(ev.clientX,ev.clientY))setDropHi(tray);else{const t=laneAtPoint(ev.clientX,ev.clientY);setDropHi(t?t.el:null);}};
+    move(e);
     const up=ev=>{
-      window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); chip.remove();
+      window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); chip.remove(); clearDropHi();
+      if(trayAtPoint(ev.clientX,ev.clientY)){addParkedCard(color);return;}
       const t=laneAtPoint(ev.clientX,ev.clientY);
       if(t)addBlock(t.tlId,minAt(ev.clientY,t.rect.top),color);
     };
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
   }
 
-  // ---------------- pointer: move / tap-to-edit ----------------
+  // ---------------- pointer: move block / tap-to-edit / park ----------------
   function onBlockDown(e,b){
     if(e.target.classList.contains("handle"))return;
     if(e.target.classList.contains("blabel")&&e.target.isContentEditable)return;
@@ -476,18 +630,52 @@
     const move=ev=>{
       if(!moving && Math.abs(ev.clientX-sx)+Math.abs(ev.clientY-sy)<5)return;
       moving=true;
+      if(trayAtPoint(ev.clientX,ev.clientY))setDropHi(tray);
+      else{const t=laneAtPoint(ev.clientX,ev.clientY);setDropHi(t?t.el:null);}
       let ns=snap(minAt(ev.clientY,laneTop)-grab);
       ns=clamp(ns,state.startMin,state.endMin-b.durMin);
       b.startMin=ns; const el=blockEl(b.id); if(el)styleBlock(el,b);
     };
     const up=ev=>{
-      window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up);
+      window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); clearDropHi();
       if(moving){
+        if(trayAtPoint(ev.clientX,ev.clientY)){parkBlock(b.id);return;}
         const t=laneAtPoint(ev.clientX,ev.clientY);
         if(t)reassign(b.id,t.tlId);
         persist(); render();
       }else{
-        const lb=blockEl(b.id).querySelector(".blabel"); startEdit(lb,b);
+        const lb=blockEl(b.id).querySelector(".blabel"); startEditEl(lb,v=>{b.label=v;});
+      }
+    };
+    window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
+  }
+
+  // ---------------- pointer: drag parked chip ----------------
+  function onChipDown(e,c){
+    if(e.target.classList.contains("cdel"))return;
+    if(e.target.classList.contains("clabel")&&e.target.isContentEditable)return;
+    e.preventDefault();
+    select(c.id);
+    const sx=e.clientX, sy=e.clientY;
+    let moving=false, ghost=null;
+    const move=ev=>{
+      if(!moving && Math.abs(ev.clientX-sx)+Math.abs(ev.clientY-sy)<5)return;
+      if(!moving){
+        moving=true;
+        ghost=document.createElement("div"); ghost.className="ghostchip"; ghost.style.background=c.color; ghost.style.color=inkOn(c.color);
+        ghost.textContent=c.label||"カード"; document.body.appendChild(ghost);
+      }
+      ghost.style.left=(ev.clientX-36)+"px"; ghost.style.top=(ev.clientY-17)+"px";
+      const t=laneAtPoint(ev.clientX,ev.clientY); setDropHi(t?t.el:null);
+    };
+    const up=ev=>{
+      window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); clearDropHi();
+      if(ghost)ghost.remove();
+      if(moving){
+        const t=laneAtPoint(ev.clientX,ev.clientY);
+        if(t)unparkTo(c.id,t.tlId,minAt(ev.clientY,t.rect.top));
+      }else{
+        const lb=chipEl(c.id).querySelector(".clabel"); if(lb)startEditEl(lb,v=>{c.label=v;});
       }
     };
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
@@ -506,6 +694,15 @@
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
   }
 
+  // ---------------- pointer: reorder timelines ----------------
+  function onGripDown(e,tl){
+    e.preventDefault(); e.stopPropagation();
+    reorderId=tl.id; render();
+    const move=ev=>{if(reorderTo(tl.id,ev.clientX))render();};
+    const up=()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up);reorderId=null;persist();render();};
+    window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
+  }
+
   // ---------------- palette ----------------
   COLORS.forEach(c=>{
     const s=document.createElement("div"); s.className="swatch"; s.style.background=c; s.style.color=inkOn(c);
@@ -517,12 +714,13 @@
   // ---------------- toolbar ----------------
   $("#segScale").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.scale=+b.dataset.s;persist();render();});
   ptitle.addEventListener("input",()=>{state.title=ptitle.value;persist();});
+  ptitle.addEventListener("pointerdown",e=>e.stopPropagation());
   $("#zoom").addEventListener("input",e=>{state.ppm=+e.target.value;persist();render();});
   $("#zOut").onclick=()=>{state.ppm=clamp(Math.round((state.ppm-0.4)*10)/10,0.8,4);persist();render();};
   $("#zIn").onclick=()=>{state.ppm=clamp(Math.round((state.ppm+0.4)*10)/10,0.8,4);persist();render();};
 
-  const outMenu=$("#outMenu"), setMenu=$("#setMenu");
-  function closeMenus(){outMenu.classList.remove("open");setMenu.classList.remove("open");}
+  const outMenu=$("#outMenu"), setMenu=$("#setMenu"), saveMenu=$("#saveMenu");
+  function closeMenus(){outMenu.classList.remove("open");setMenu.classList.remove("open");saveMenu.classList.remove("open");}
   function openMenu(menu,btn){
     closeMenus(); const r=btn.getBoundingClientRect();
     menu.style.top=(r.bottom+6)+"px"; menu.style.right="auto"; menu.classList.add("open");
@@ -530,15 +728,53 @@
     menu.style.left=left+"px";
   }
   $("#btnOut").onclick=e=>{e.stopPropagation();outMenu.classList.contains("open")?closeMenus():openMenu(outMenu,e.currentTarget);};
+  $("#btnSave").onclick=e=>{e.stopPropagation();
+    if(saveMenu.classList.contains("open")){closeMenus();return;}
+    renderHistory(); openMenu(saveMenu,e.currentTarget);};
   $("#btnClock").onclick=e=>{e.stopPropagation();
     if(setMenu.classList.contains("open")){closeMenus();return;}
     $("#setStart").value=fmt2(state.startMin); $("#setEnd").value=fmt2(state.endMin); openMenu(setMenu,e.currentTarget);};
   document.addEventListener("click",closeMenus);
   outMenu.addEventListener("click",e=>e.stopPropagation());
   setMenu.addEventListener("click",e=>e.stopPropagation());
+  saveMenu.addEventListener("click",e=>e.stopPropagation());
   $("#setStart").addEventListener("change",e=>{const v=parseTime(e.target.value);if(v<state.endMin){state.startMin=v;persist();render();}});
   $("#setEnd").addEventListener("change",e=>{const v=parseTime(e.target.value);if(v>state.startMin){state.endMin=v;persist();render();}});
-  $("#btnSave").onclick=()=>{persist();toast("保存しました");};
+
+  // ---------------- history (save menu) ----------------
+  function readHistory(){try{return JSON.parse(localStorage.getItem(HKEY))||[];}catch(e){return[];}}
+  function writeHistory(a){try{localStorage.setItem(HKEY,JSON.stringify(a));}catch(e){}}
+  function saveSnapshot(){
+    const a=readHistory();
+    a.unshift({id:gid("h"),ts:Date.now(),title:state.title||"無題",state:JSON.parse(JSON.stringify(state))});
+    while(a.length>20)a.pop();
+    writeHistory(a); renderHistory(); toast("履歴に保存しました");
+  }
+  function loadSnapshot(id){
+    const h=readHistory().find(x=>x.id===id); if(!h)return;
+    state=normalize(JSON.parse(JSON.stringify(h.state))); selId=null; persist(); render(); closeMenus(); toast("呼び出しました");
+  }
+  function deleteSnapshot(id){writeHistory(readHistory().filter(x=>x.id!==id));renderHistory();}
+  function renderHistory(){
+    const list=$("#histList"); list.innerHTML="";
+    const a=readHistory();
+    if(!a.length){const e=document.createElement("div");e.className="histempty";e.textContent="まだ履歴はありません";list.appendChild(e);return;}
+    a.forEach(h=>{
+      const row=document.createElement("div"); row.className="histrow";
+      const main=document.createElement("div"); main.className="histmain";
+      const ht=document.createElement("div"); ht.className="ht"; ht.textContent=h.title||"無題";
+      const hd=document.createElement("div"); hd.className="hd"; hd.textContent=fmtDate(h.ts);
+      main.appendChild(ht); main.appendChild(hd); main.onclick=()=>loadSnapshot(h.id);
+      const del=document.createElement("button"); del.className="histdel"; del.textContent="✕"; del.title="削除";
+      del.onclick=ev=>{ev.stopPropagation();deleteSnapshot(h.id);};
+      row.appendChild(main); row.appendChild(del); list.appendChild(row);
+    });
+  }
+  saveMenu.addEventListener("click",e=>{
+    const r=e.target.closest(".row[data-sact]"); if(!r)return;
+    if(r.dataset.sact==="snap")saveSnapshot();
+    else if(r.dataset.sact==="jsonLoad"){closeMenus();$("#fileIn").click();}
+  });
 
   // ---------------- output ----------------
   outMenu.addEventListener("click",e=>{const r=e.target.closest(".row");if(!r)return;closeMenus();ACT[r.dataset.act]&&ACT[r.dataset.act]();});
@@ -563,7 +799,6 @@
     return canvas;
   }
   const ACT={
-    save(){persist();toast("保存しました");},
     print(){window.print();},
     async pdf(){
       if(!window.jspdf){toast("PDFライブラリ未読込");return;}
@@ -578,6 +813,7 @@
       pdf.save(safeName()+".pdf");
     },
     async jpeg(){toast("画像を書き出し中…");const canvas=await captureCanvas();canvas.toBlob(b=>download(b,safeName()+".jpg"),"image/jpeg",0.95);},
+    async png(){toast("画像を書き出し中…");const canvas=await captureCanvas();canvas.toBlob(b=>download(b,safeName()+".png"),"image/png");},
     jsonSave(){download(new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),safeName()+".json");toast("JSONを保存しました");},
     jsonLoad(){$("#fileIn").click();},
     excel(){
@@ -593,6 +829,15 @@
       if(navigator.clipboard&&navigator.clipboard.writeText)
         navigator.clipboard.writeText(tsv).then(()=>{toast("コピー完了→開いたシートでCtrl+V");open();},()=>{open();toast("シートを開きました");});
       else{open();toast("シートを開きました");}
+    },
+    url(){
+      try{
+        const data=btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+        const link=location.origin+location.pathname+"#d="+data;
+        if(navigator.clipboard&&navigator.clipboard.writeText)
+          navigator.clipboard.writeText(link).then(()=>toast("URLをコピーしました"),()=>prompt("このURLをコピーしてください",link));
+        else prompt("このURLをコピーしてください",link);
+      }catch(e){toast("URLの作成に失敗しました");}
     }
   };
   $("#fileIn").addEventListener("change",e=>{
@@ -605,16 +850,23 @@
   // ---------------- keyboard ----------------
   document.addEventListener("keydown",e=>{
     const ed=document.activeElement;
-    if(ed&&(ed.isContentEditable||ed.tagName==="INPUT"))return;
-    if(!selId)return; const loc=locate(selId); if(!loc)return; const b=loc.b;
-    if(e.key==="Delete"||e.key==="Backspace"){e.preventDefault();removeBlock(selId);}
-    else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="d"){e.preventDefault();duplicate(b);}
-    else if(e.key==="ArrowUp"){e.preventDefault();b.startMin=clamp(b.startMin-state.scale,state.startMin,state.endMin-b.durMin);persist();render();}
-    else if(e.key==="ArrowDown"){e.preventDefault();b.startMin=clamp(b.startMin+state.scale,state.startMin,state.endMin-b.durMin);persist();render();}
+    if(ed&&(ed.isContentEditable||ed.tagName==="INPUT"||ed.tagName==="TEXTAREA"))return;
+    const ctrl=e.ctrlKey||e.metaKey;
+    if(ctrl&&e.key.toLowerCase()==="c"){
+      if(selId){const f=findCard(selId);if(f){clip={label:f.b.label,color:f.b.color,durMin:f.b.durMin,startMin:f.kind==="tl"?f.b.startMin:null,tlId:f.kind==="tl"?f.tl.id:null};toast("コピーしました");}}
+      return;
+    }
+    if(ctrl&&e.key.toLowerCase()==="v"){if(clip){e.preventDefault();pasteClip();}return;}
+    if(!selId)return; const f=findCard(selId); if(!f)return; const b=f.b;
+    if(e.key==="Delete"||e.key==="Backspace"){e.preventDefault();removeCard(selId);}
+    else if(ctrl&&e.key.toLowerCase()==="d"){e.preventDefault();duplicate(selId);}
+    else if(f.kind==="tl"&&e.key==="ArrowUp"){e.preventDefault();b.startMin=clamp(b.startMin-state.scale,state.startMin,state.endMin-b.durMin);persist();render();}
+    else if(f.kind==="tl"&&e.key==="ArrowDown"){e.preventDefault();b.startMin=clamp(b.startMin+state.scale,state.startMin,state.endMin-b.durMin);persist();render();}
   });
 
   // ---------------- init ----------------
-  load(); render();
+  if(!fromHash())load();
+  render();
 })();
 </script>
 </body>
