@@ -200,6 +200,11 @@
   .menu .row svg{width:19px;height:19px;color:var(--accent-d);flex:none}
   .menu .sep{height:1px;background:var(--line);margin:6px 6px}
   .menu .ttl{font-size:11px;color:var(--muted);font-weight:800;padding:6px 12px 2px;letter-spacing:.4px}
+  .bgmenu{min-width:0}
+  .bgswatches{display:flex;flex-wrap:wrap;gap:8px;width:188px;padding:6px 6px 4px}
+  .bgswatches b{width:32px;height:32px;border-radius:9px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);transition:transform .1s}
+  .bgswatches b:hover{transform:scale(1.08)}
+  .bgswatches b.on{box-shadow:0 0 0 2px var(--accent),inset 0 0 0 1px rgba(0,0,0,.12)}
   .pagesel{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:4px 12px 8px}
   .pagesel>span{font-size:12px;font-weight:800;color:var(--muted);padding-top:6px}
   .pagesel-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
@@ -255,11 +260,43 @@
   body.viewonly #btnClock,
   body.viewonly #segScale,
   body.viewonly #btnDur,
+  body.viewonly #btnBg,
   body.viewonly #btnOut,
   body.viewonly #btnSave{display:none !important}
   body.viewonly .ptitle{pointer-events:none;background:transparent;border-color:transparent}
   body.viewonly .block{cursor:default}
   body.viewonly .vbadge{display:inline-flex;align-items:center;gap:5px;margin-left:8px;padding:3px 11px;border-radius:999px;background:#eef3f9;color:#5b6675;font-size:12px;font-weight:700;white-space:nowrap}
+  /* タッチ端末で閲覧専用ページのタイムラインを指でスクロールできるように
+     （編集UIは無効化済みなので touch-action を戻す） */
+  body.viewonly .block,
+  body.viewonly .lane,
+  body.viewonly .lane-resize,
+  body.viewonly .tl-grip,
+  body.viewonly .sb-card,
+  body.viewonly .chip{touch-action:auto}
+  body.viewonly .stagewrap{-webkit-overflow-scrolling:touch}
+
+  /* ---------- スマホ・タブレット（端末を選ばず閲覧できるように） ---------- */
+  @media (max-width:900px){
+    .topbar{height:54px;gap:6px;padding:0 9px}
+    .brand{font-size:15px}
+    .brand .logo{width:27px;height:27px}
+    .brand .logo svg{width:16px;height:16px}
+    .ptitle{font-size:14px;min-width:96px;max-width:170px;padding:8px 10px}
+    .zoom{height:38px;padding:0 6px;gap:4px}
+    .zoom input[type=range]{width:74px}
+    .iconbtn{width:38px;height:38px}
+    .iconbtn svg{width:18px;height:18px}
+    .seg button{min-width:32px;height:30px}
+    .sidebar{width:112px}
+    .stagewrap{padding:12px 12px 18px}
+  }
+  @media (max-width:460px){
+    .brand span:not(.logo){display:none}   /* ロゴだけ残してテキストは隠す */
+    .ptitle{min-width:74px;max-width:130px}
+    .zoom input[type=range]{width:58px}
+    .vbadge{margin-left:4px}
+  }
   @media print{
     .topbar,.sidebar,.menu,.toast,.ghostchip,.actionbar,.swatchpop,.chipbar,.chipswatch,.clearall,.addouter,.no-capture{display:none !important}
     body{overflow:visible;background:#fff}
@@ -318,6 +355,12 @@
     <input type="range" id="fsize" min="0.7" max="2" step="0.1" value="1" aria-label="文字の大きさ" />
     <button id="fIn" aria-label="文字を大きく"><span class="az lg">A</span></button>
   </div>
+
+  <!-- background color -->
+  <button class="iconbtn" id="btnBg" aria-label="背景色">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3 4 10a1.6 1.6 0 0 0 0 2.3l5.7 5.7a1.6 1.6 0 0 0 2.3 0l5.4-5.4a1 1 0 0 0 0-1.4L11 3z"/><path d="M9 5.2 7 3.2"/><path d="M4.5 12.5h13"/><path d="M20 15s1.6 1.9 1.6 3a1.6 1.6 0 1 1-3.2 0c0-1.1 1.6-3 1.6-3z"/></svg>
+    <span class="tip">背景色</span>
+  </button>
 
   <!-- output -->
   <button class="iconbtn" id="btnOut" aria-label="出力">
@@ -395,6 +438,12 @@
   <div class="histlist" id="histList"></div>
 </div>
 
+<!-- ============ BACKGROUND COLOR ============ -->
+<div class="menu bgmenu" id="bgMenu">
+  <div class="ttl">はいけいの いろ</div>
+  <div class="bgswatches" id="bgSwatches"></div>
+</div>
+
 <!-- ============ SETTINGS ============ -->
 <div class="menu settings" id="setMenu">
   <div class="field"><label>開始</label><input type="time" id="setStart" step="300" /></div>
@@ -417,7 +466,7 @@
   let outPages=1;
   let viewMode=false;   // 共有URLで開いたときの閲覧専用モード
 
-  function defaultState(){return {title:"",scale:30,startMin:540,endMin:1080,ppm:2,fontScale:1,showDur:false,timelines:[{id:"t1",name:"",blocks:[]}],parking:[]};}
+  function defaultState(){return {title:"",scale:30,startMin:540,endMin:1080,ppm:2,fontScale:1,showDur:false,bg:"#FFFFFF",timelines:[{id:"t1",name:"",blocks:[]}],parking:[]};}
 
   const $=s=>document.querySelector(s);
   const track=$("#track"), sidebar=$("#sidebar"), okibaBody=$("#okibaBody"), ptitle=$("#ptitle"), toastEl=$("#toast");
@@ -464,6 +513,7 @@
     if(!s.fontScale)s.fontScale=1;
     s.fontScale=clamp(s.fontScale,0.7,2);
     s.showDur=!!s.showDur;
+    if(typeof s.bg!=="string"||!/^#[0-9a-fA-F]{6}$/.test(s.bg))s.bg="#FFFFFF";
     if([1,5,10,30,60].indexOf(s.scale)<0)s.scale=30;
     return s;
   }
@@ -522,6 +572,7 @@
   function render(){
     const L=laneLen();
     track.innerHTML="";
+    track.style.background=state.bg||"#FFFFFF";   // 背景色
     // gutter
     const g=document.createElement("div"); g.className="gutter";
     const gh=document.createElement("div"); gh.className="ghead"; gh.style.height=HEAD+"px";
@@ -683,10 +734,12 @@
     const d=Math.min(def,state.endMin-s);
     const b={id:gid("b"),startMin:s,durMin:d,label:"",color:color||"#4DABF7"};
     tl.blocks.push(b); selId=b.id; persist(); render();
+    const lb=blockEl(b.id)&&blockEl(b.id).querySelector(".blabel"); if(lb)startEditEl(lb,v=>{b.label=v;}); // 作成直後はすぐ名前を入力できるように
   }
   function addParkedCard(color){
     const c={id:gid("p"),label:"",color:color||"#4DABF7",durMin:Math.max(state.scale,30)};
     state.parking.push(c); selId=c.id; persist(); render();
+    const lb=chipEl(c.id)&&chipEl(c.id).querySelector(".clabel"); if(lb)startEditEl(lb,v=>{c.label=v;}); // 作成直後はすぐ名前を入力できるように
   }
   function duplicate(id){
     const f=findCard(id); if(!f)return;
@@ -735,7 +788,7 @@
     const b={id:gid("b"),startMin:s,durMin:Math.min(dur,state.endMin-s),label:clip.label||"",color:clip.color||"#4DABF7"};
     tl.blocks.push(b); selId=b.id; persist(); render(); toast("貼り付けました");
   }
-  function select(id){selId=id;render();}
+  function select(id){if(selId===id)return;selId=id;render();}
 
   function addTimeline(){
     if(state.timelines.length>=MAXTL){toast("タイムラインは最大"+MAXTL+"個までです");return;}
@@ -863,9 +916,8 @@
         const t=laneAtPoint(ev.clientX,ev.clientY);
         if(t)reassign(b.id,t.tlId);
         persist(); render(); checkOverlapPrompt(b.id);
-      }else{
-        const lb=blockEl(b.id).querySelector(".blabel"); startEditEl(lb,v=>{b.label=v;});
       }
+      // タップは選択のみ（Ctrl+C/Vが使えるように）。ラベル編集はダブルクリックか鉛筆ボタンから
     };
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
   }
@@ -893,9 +945,8 @@
       if(moving){
         const t=laneAtPoint(ev.clientX,ev.clientY);
         if(t)unparkTo(c.id,t.tlId,minAt(ev.clientY,t.rect.top));
-      }else{
-        const lb=chipEl(c.id)&&chipEl(c.id).querySelector(".clabel"); if(lb)startEditEl(lb,v=>{c.label=v;});
       }
+      // タップは選択のみ（Ctrl+C/Vが使えるように）。ラベル編集はダブルクリックか鉛筆ボタンから
     };
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
   }
@@ -974,8 +1025,8 @@
     state.timelines=[{id:"t1",name:"",blocks:[]}]; state.parking=[]; selId=null; clip=null; persist(); render(); toast("すべて削除しました");
   };
 
-  const outMenu=$("#outMenu"), setMenu=$("#setMenu"), saveMenu=$("#saveMenu");
-  function closeMenus(){outMenu.classList.remove("open");setMenu.classList.remove("open");saveMenu.classList.remove("open");}
+  const outMenu=$("#outMenu"), setMenu=$("#setMenu"), saveMenu=$("#saveMenu"), bgMenu=$("#bgMenu");
+  function closeMenus(){outMenu.classList.remove("open");setMenu.classList.remove("open");saveMenu.classList.remove("open");bgMenu.classList.remove("open");}
   function openMenu(menu,btn){
     closeMenus(); const r=btn.getBoundingClientRect();
     menu.style.top=(r.bottom+6)+"px"; menu.style.right="auto"; menu.classList.add("open");
@@ -989,10 +1040,24 @@
   $("#btnClock").onclick=e=>{e.stopPropagation();
     if(setMenu.classList.contains("open")){closeMenus();return;}
     $("#setStart").value=fmt2(state.startMin); $("#setEnd").value=fmt2(state.endMin); openMenu(setMenu,e.currentTarget);};
+  // 背景色メニュー
+  const BGCOLORS=["#FFFFFF","#F1F3F5","#E7F5FF","#E3FAFC","#EBFBEE","#FFF9DB","#FFF0F6","#F3F0FF","#FFE8CC","#DEE2E6"];
+  function renderBgSwatches(){
+    const box=$("#bgSwatches"); box.innerHTML="";
+    const cur=(state.bg||"#FFFFFF").toUpperCase();
+    BGCOLORS.forEach(c=>{const b=document.createElement("b");b.style.background=c;b.title=c;
+      if(cur===c.toUpperCase())b.classList.add("on");
+      b.onclick=()=>{state.bg=c;persist();render();renderBgSwatches();};
+      box.appendChild(b);});
+  }
+  $("#btnBg").onclick=e=>{e.stopPropagation();
+    if(bgMenu.classList.contains("open")){closeMenus();return;}
+    renderBgSwatches(); openMenu(bgMenu,e.currentTarget);};
   document.addEventListener("click",closeMenus);
   outMenu.addEventListener("click",e=>e.stopPropagation());
   setMenu.addEventListener("click",e=>e.stopPropagation());
   saveMenu.addEventListener("click",e=>e.stopPropagation());
+  bgMenu.addEventListener("click",e=>e.stopPropagation());
   $("#setStart").addEventListener("change",e=>{const v=parseTime(e.target.value);if(v<state.endMin){state.startMin=v;persist();render();}});
   $("#setEnd").addEventListener("change",e=>{const v=parseTime(e.target.value);if(v>state.startMin){state.endMin=v;persist();render();}});
 
@@ -1106,7 +1171,7 @@
     document.body.classList.add("capturing");
     addCaptureGrid();
     await new Promise(r=>requestAnimationFrame(r));
-    const canvas=await html2canvas(track,{scale:2,backgroundColor:"#ffffff",logging:false});
+    const canvas=await html2canvas(track,{scale:2,backgroundColor:state.bg||"#ffffff",logging:false});
     removeCaptureGrid();
     document.body.classList.remove("capturing"); selId=keep; render();
     return canvas;
@@ -1215,16 +1280,18 @@
     const ed=document.activeElement;
     if(ed&&(ed.isContentEditable||ed.tagName==="INPUT"||ed.tagName==="TEXTAREA"))return;
     const ctrl=e.ctrlKey||e.metaKey;
-    if(ctrl&&e.key.toLowerCase()==="z"&&!e.shiftKey){e.preventDefault();undo();return;}
-    if(ctrl&&(e.key.toLowerCase()==="y"||(e.key.toLowerCase()==="z"&&e.shiftKey))){e.preventDefault();redo();return;}
-    if(ctrl&&e.key.toLowerCase()==="c"){
+    const code=e.code||"";
+    const isKey=k=>code==="Key"+k.toUpperCase()||(e.key||"").toLowerCase()===k; // 日本語入力(IME)中もCtrlショートカットを確実に拾う
+    if(ctrl&&isKey("z")&&!e.shiftKey){e.preventDefault();undo();return;}
+    if(ctrl&&(isKey("y")||(isKey("z")&&e.shiftKey))){e.preventDefault();redo();return;}
+    if(ctrl&&isKey("c")){
       if(selId){const f=findCard(selId);if(f){clip={label:f.b.label,color:f.b.color,durMin:f.b.durMin,startMin:f.kind==="tl"?f.b.startMin:null,tlId:f.kind==="tl"?f.tl.id:null};toast("コピーしました");}}
       return;
     }
-    if(ctrl&&e.key.toLowerCase()==="v"){if(clip){e.preventDefault();pasteClip();}return;}
+    if(ctrl&&isKey("v")){if(clip){e.preventDefault();pasteClip();}return;}
     if(!selId)return; const f=findCard(selId); if(!f)return; const b=f.b;
     if(e.key==="Delete"||e.key==="Backspace"){e.preventDefault();removeCard(selId);}
-    else if(ctrl&&e.key.toLowerCase()==="d"){e.preventDefault();duplicate(selId);}
+    else if(ctrl&&isKey("d")){e.preventDefault();duplicate(selId);}
     else if(f.kind==="tl"&&e.key==="ArrowUp"){e.preventDefault();b.startMin=clamp(b.startMin-state.scale,state.startMin,state.endMin-b.durMin);persist();render();checkOverlapPrompt(b.id);}
     else if(f.kind==="tl"&&e.key==="ArrowDown"){e.preventDefault();b.startMin=clamp(b.startMin+state.scale,state.startMin,state.endMin-b.durMin);persist();render();checkOverlapPrompt(b.id);}
   });
