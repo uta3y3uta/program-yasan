@@ -248,6 +248,18 @@
 
   /* hide chrome for capture / print */
   body.capturing .no-capture{display:none !important}
+
+  /* 閲覧専用（共有URLで開いたとき）: タイムラインだけ表示・編集UIは隠す */
+  .vbadge{display:none}
+  body.viewonly .no-capture{display:none !important}
+  body.viewonly #btnClock,
+  body.viewonly #segScale,
+  body.viewonly #btnDur,
+  body.viewonly #btnOut,
+  body.viewonly #btnSave{display:none !important}
+  body.viewonly .ptitle{pointer-events:none;background:transparent;border-color:transparent}
+  body.viewonly .block{cursor:default}
+  body.viewonly .vbadge{display:inline-flex;align-items:center;gap:5px;margin-left:8px;padding:3px 11px;border-radius:999px;background:#eef3f9;color:#5b6675;font-size:12px;font-weight:700;white-space:nowrap}
   @media print{
     .topbar,.sidebar,.menu,.toast,.ghostchip,.actionbar,.swatchpop,.chipbar,.chipswatch,.clearall,.addouter,.no-capture{display:none !important}
     body{overflow:visible;background:#fff}
@@ -268,6 +280,7 @@
     <span>プログラム屋さん</span>
   </div>
   <input class="ptitle" id="ptitle" placeholder="タイトル" maxlength="60" />
+  <span class="vbadge" id="vbadge"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>閲覧専用</span>
 
   <div class="spacer"></div>
 
@@ -402,6 +415,7 @@
   let selId=null, clip=null, reorderId=null, dropHiEl=null, overlapAskEl=null;
   let undoStack=[], redoStack=[], lastCommitted=null;
   let outPages=1;
+  let viewMode=false;   // 共有URLで開いたときの閲覧専用モード
 
   function defaultState(){return {title:"",scale:30,startMin:540,endMin:1080,ppm:2,fontScale:1,showDur:false,timelines:[{id:"t1",name:"",blocks:[]}],parking:[]};}
 
@@ -453,7 +467,7 @@
     if([1,5,10,30,60].indexOf(s.scale)<0)s.scale=30;
     return s;
   }
-  function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+  function saveLocal(){if(viewMode)return;try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
   function persist(){
     const snap=JSON.stringify(state);
     if(lastCommitted!==null && snap!==lastCommitted){
@@ -493,8 +507,8 @@
         while(b.length%4)b+="=";
         const j=decodeURIComponent(escape(atob(b)));
         state=normalize(JSON.parse(j));
-        saveLocal();                                       // スマホ再読込でも残るように保存
-        return true;
+        viewMode=true;                                     // 共有URLは閲覧専用で表示（編集不可・タイムラインのみ）
+        return true;                                       // localStorageは上書きしない（受け取った人の作業を守る／URLのhashで再読込も保持）
       }catch(e){}
     }
     return false;
@@ -529,7 +543,7 @@
       grip.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>';
       grip.addEventListener("pointerdown",e=>onGripDown(e,tl));
       head.appendChild(grip);
-      const nm=document.createElement("input"); nm.className="tl-name"; nm.placeholder="名称"; nm.value=tl.name||""; nm.maxLength=20;
+      const nm=document.createElement("input"); nm.className="tl-name"; nm.placeholder="名称"; nm.value=tl.name||""; nm.maxLength=20; if(viewMode)nm.readOnly=true;
       nm.addEventListener("input",()=>{tl.name=nm.value;saveLocal();});
       nm.addEventListener("change",()=>{tl.name=nm.value;persist();});
       nm.addEventListener("pointerdown",e=>e.stopPropagation());
@@ -592,9 +606,10 @@
     const tm=document.createElement("div"); tm.className="btime";
     const lb=document.createElement("div"); lb.className="blabel"; lb.textContent=b.label||"";
     inner.appendChild(tm); inner.appendChild(lb); el.appendChild(inner);
+    styleBlock(el,b);
+    if(viewMode) return el;                       // 閲覧専用: 操作ハンドル・編集ハンドラは付けない
     const ht=document.createElement("div"); ht.className="handle top no-capture"; el.appendChild(ht);
     const h=document.createElement("div"); h.className="handle no-capture"; el.appendChild(h);
-    styleBlock(el,b);
     if(b.id===selId) el.appendChild(buildActionBar(b));
     el.addEventListener("pointerdown",e=>onBlockDown(e,b));
     ht.addEventListener("pointerdown",e=>onHandleTopDown(e,b));
@@ -932,9 +947,10 @@
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
   }
 
-  // ---------------- palette (single red card) ----------------
-  sbCard.style.background=COLORS[0]; sbCard.style.color=inkOn(COLORS[0]);
-  sbCard.addEventListener("pointerdown",e=>onSwatchDown(e,COLORS[0]));
+  // ---------------- palette (＋ボタンは左上ロゴと同じ青で統一) ----------------
+  const ADD_COLOR="#4DABF7"; // = var(--accent) / COLORS[6]
+  sbCard.style.background=ADD_COLOR; sbCard.style.color=inkOn(ADD_COLOR);
+  sbCard.addEventListener("pointerdown",e=>onSwatchDown(e,ADD_COLOR));
 
   // ---------------- toolbar ----------------
   $("#segScale").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.scale=+b.dataset.s;persist();render();});
@@ -1195,6 +1211,7 @@
 
   // ---------------- keyboard ----------------
   document.addEventListener("keydown",e=>{
+    if(viewMode)return;                              // 閲覧専用: ショートカット無効
     const ed=document.activeElement;
     if(ed&&(ed.isContentEditable||ed.tagName==="INPUT"||ed.tagName==="TEXTAREA"))return;
     const ctrl=e.ctrlKey||e.metaKey;
@@ -1215,6 +1232,7 @@
   // ---------------- init ----------------
   if(!fromHash())load();
   lastCommitted=JSON.stringify(state);
+  if(viewMode){document.body.classList.add("viewonly");ptitle.readOnly=true;}
   render();
 })();
 </script>
