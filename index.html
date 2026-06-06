@@ -321,6 +321,7 @@
 
   let state=defaultState();
   let selId=null, clip=null, reorderId=null, dropHiEl=null;
+  let undoStack=[], redoStack=[], lastCommitted=null;
 
   function defaultState(){return {title:"",scale:30,startMin:540,endMin:1080,ppm:2,timelines:[{id:"t1",name:"",blocks:[]}],parking:[]};}
 
@@ -367,7 +368,35 @@
     if([5,10,30,60].indexOf(s.scale)<0)s.scale=30;
     return s;
   }
-  function persist(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+  function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+  function persist(){
+    const snap=JSON.stringify(state);
+    if(lastCommitted!==null && snap!==lastCommitted){
+      undoStack.push(lastCommitted);
+      if(undoStack.length>100)undoStack.shift();
+      redoStack.length=0;
+    }
+    lastCommitted=snap;
+    saveLocal();
+  }
+  function undo(){
+    if(!undoStack.length){toast("これ以上戻せません");return;}
+    redoStack.push(lastCommitted);
+    const prev=undoStack.pop();
+    lastCommitted=prev;
+    state=normalize(JSON.parse(prev));
+    selId=null;
+    saveLocal();render();toast("元に戻しました");
+  }
+  function redo(){
+    if(!redoStack.length){toast("これ以上やり直せません");return;}
+    undoStack.push(lastCommitted);
+    const next=redoStack.pop();
+    lastCommitted=next;
+    state=normalize(JSON.parse(next));
+    selId=null;
+    saveLocal();render();toast("やり直しました");
+  }
   function load(){try{const r=localStorage.getItem(KEY);if(r)state=normalize(JSON.parse(r));}catch(e){}}
   function fromHash(){
     const h=location.hash||"";
@@ -402,7 +431,8 @@
       grip.addEventListener("pointerdown",e=>onGripDown(e,tl));
       head.appendChild(grip);
       const nm=document.createElement("input"); nm.className="tl-name"; nm.placeholder="名称"; nm.value=tl.name||""; nm.maxLength=20;
-      nm.addEventListener("input",()=>{tl.name=nm.value;persist();});
+      nm.addEventListener("input",()=>{tl.name=nm.value;saveLocal();});
+      nm.addEventListener("change",()=>{tl.name=nm.value;persist();});
       nm.addEventListener("pointerdown",e=>e.stopPropagation());
       head.appendChild(nm);
       if(state.timelines.length>1){
@@ -735,17 +765,19 @@
 
   // ---------------- toolbar ----------------
   $("#segScale").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.scale=+b.dataset.s;persist();render();});
-  ptitle.addEventListener("input",()=>{state.title=ptitle.value;persist();});
+  ptitle.addEventListener("input",()=>{state.title=ptitle.value;saveLocal();});
+  ptitle.addEventListener("change",()=>{state.title=ptitle.value;persist();});
   ptitle.addEventListener("pointerdown",e=>e.stopPropagation());
-  $("#zoom").addEventListener("input",e=>{state.ppm=+e.target.value;persist();render();});
+  $("#zoom").addEventListener("input",e=>{state.ppm=+e.target.value;saveLocal();render();});
+  $("#zoom").addEventListener("change",e=>{state.ppm=+e.target.value;persist();render();});
   $("#zOut").onclick=()=>{state.ppm=clamp(Math.round((state.ppm-0.4)*10)/10,0.8,4);persist();render();};
   $("#zIn").onclick=()=>{state.ppm=clamp(Math.round((state.ppm+0.4)*10)/10,0.8,4);persist();render();};
 
   $("#clearAll").onclick=()=>{
-    const has=state.timelines.some(t=>t.blocks.length)||state.parking.length;
+    const has=state.timelines.some(t=>t.blocks.length)||state.parking.length||state.timelines.length>1;
     if(!has){toast("カードがありません");return;}
     if(!confirm("すべてのカードを削除しますか？"))return;
-    state.timelines.forEach(t=>{t.blocks=[];}); state.parking=[]; selId=null; clip=null; persist(); render(); toast("すべて削除しました");
+    state.timelines=[{id:"t1",name:"",blocks:[]}]; state.parking=[]; selId=null; clip=null; persist(); render(); toast("すべて削除しました");
   };
 
   const outMenu=$("#outMenu"), setMenu=$("#setMenu"), saveMenu=$("#saveMenu");
@@ -881,6 +913,8 @@
     const ed=document.activeElement;
     if(ed&&(ed.isContentEditable||ed.tagName==="INPUT"||ed.tagName==="TEXTAREA"))return;
     const ctrl=e.ctrlKey||e.metaKey;
+    if(ctrl&&e.key.toLowerCase()==="z"&&!e.shiftKey){e.preventDefault();undo();return;}
+    if(ctrl&&(e.key.toLowerCase()==="y"||(e.key.toLowerCase()==="z"&&e.shiftKey))){e.preventDefault();redo();return;}
     if(ctrl&&e.key.toLowerCase()==="c"){
       if(selId){const f=findCard(selId);if(f){clip={label:f.b.label,color:f.b.color,durMin:f.b.durMin,startMin:f.kind==="tl"?f.b.startMin:null,tlId:f.kind==="tl"?f.tl.id:null};toast("コピーしました");}}
       return;
@@ -895,6 +929,7 @@
 
   // ---------------- init ----------------
   if(!fromHash())load();
+  lastCommitted=JSON.stringify(state);
   render();
 })();
 </script>
