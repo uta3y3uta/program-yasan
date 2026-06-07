@@ -929,7 +929,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
     if(e.target.classList.contains("handle"))return;
     if(e.target.classList.contains("blabel")&&e.target.isContentEditable)return;
     e.preventDefault();
-    select(b.id);
+    // pointerdown では再描画しない（つかんだ要素が消えてタッチのドラッグが途切れるのを防ぐ）
     const sx=e.clientX, sy=e.clientY;
     const laneTop=blockEl(b.id).closest(".lane").getBoundingClientRect().top;
     const grab=minAt(sy,laneTop)-b.startMin;
@@ -950,8 +950,11 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
         const t=laneAtPoint(ev.clientX,ev.clientY);
         if(t)reassign(b.id,t.tlId);
         persist(); render(); checkOverlapPrompt(b.id);
+      }else{                                                            // タップ → 選択してそのままラベル編集
+        select(b.id);
+        const lb=blockEl(b.id)&&blockEl(b.id).querySelector(".blabel");
+        if(lb)startEditEl(lb,v=>{b.label=v;});
       }
-      // タップは選択のみ（Ctrl+C/Vが使えるように）。ラベル編集はダブルクリックか鉛筆ボタンから
     };
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
   }
@@ -960,7 +963,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
   function onChipDown(e,c){
     if(e.target.classList.contains("clabel")&&e.target.isContentEditable)return;
     e.preventDefault();
-    select(c.id);
+    // pointerdown では再描画しない（つかんだ要素が消えてタッチのドラッグが途切れるのを防ぐ）
     const sx=e.clientX, sy=e.clientY;
     let moving=false, ghost=null;
     const move=ev=>{
@@ -979,8 +982,11 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
       if(moving){
         const t=laneAtPoint(ev.clientX,ev.clientY);
         if(t)unparkTo(c.id,t.tlId,minAt(ev.clientY,t.rect.top));
+      }else{                                                           // タップ → 選択してそのままラベル編集
+        select(c.id);
+        const lb=chipEl(c.id)&&chipEl(c.id).querySelector(".clabel");
+        if(lb)startEditEl(lb,v=>{c.label=v;});
       }
-      // タップは選択のみ（Ctrl+C/Vが使えるように）。ラベル編集はダブルクリックか鉛筆ボタンから
     };
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
   }
