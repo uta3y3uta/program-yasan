@@ -136,7 +136,8 @@
   }
   .block:active{cursor:grabbing}
   .block.sel{box-shadow:0 0 0 3px var(--accent),var(--shadow);z-index:5}
-  .block.dragghost{opacity:.55;cursor:grabbing;z-index:7;box-shadow:var(--shadow);transition:none}
+  .block.dragghost{opacity:.6;cursor:grabbing;z-index:9;transform:scale(1.05);transform-origin:center;
+    box-shadow:0 14px 30px rgba(20,30,55,.28);transition:transform .12s ease,box-shadow .12s ease,opacity .12s ease}
   .block .inner{position:absolute;inset:0;display:flex;flex-direction:column;padding:5px 8px;gap:2px;overflow:hidden;border-radius:9px}
   .block .btime{font-size:calc(10px*var(--fscale));font-weight:800;opacity:.72;letter-spacing:.2px}
   .block .blabel{font-size:calc(13px*var(--fscale));font-weight:800;line-height:1.2;outline:none;overflow:hidden;flex:1;word-break:break-word;cursor:text}
@@ -474,8 +475,8 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const snap=m=>Math.round(m/state.scale)*state.scale;
-  function fmt(m){m=((m%1440)+1440)%1440;return Math.floor(m/60)+":"+String(m%60).padStart(2,"0");}   // 24h表記（30:00→6:00）
-  function fmt2(m){m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");}
+  function fmt(m){m=((Math.round(m)%1440)+1440)%1440;return Math.floor(m/60)+":"+String(m%60).padStart(2,"0");}   // 24h表記（30:00→6:00）
+  function fmt2(m){m=((Math.round(m)%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");}
   function parseTime(v){const[a,b]=v.split(":").map(Number);return a*60+b;}
   function lum(hex){const c=hex.replace("#","");return (0.299*parseInt(c.slice(0,2),16)+0.587*parseInt(c.slice(2,4),16)+0.114*parseInt(c.slice(4,6),16))/255;}
   function inkOn(hex){return lum(hex)>0.62?"#33405a":"#ffffff";}
@@ -939,14 +940,20 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
       if(!moving){moving=true; const el0=blockEl(b.id); if(el0)el0.classList.add("dragghost");}
       if(okibaAtPoint(ev.clientX,ev.clientY))setDropHi(okibaBody);
       else{const t=laneAtPoint(ev.clientX,ev.clientY);setDropHi(t?t.el:null);}
-      let ns=snap(minAt(ev.clientY,laneTop)-grab);
+      let ns=minAt(ev.clientY,laneTop)-grab;                            // スナップせず指の位置になめらかに追従
       ns=clamp(ns,state.startMin,state.endMin-b.durMin);
-      b.startMin=ns; const el=blockEl(b.id); if(el)styleBlock(el,b);
+      b.startMin=ns; const el=blockEl(b.id);
+      if(el){
+        styleBlock(el,b);
+        const sm=clamp(snap(ns),state.startMin,state.endMin-b.durMin); // 時刻ラベルは吸着先（着地点）を表示
+        const tm=el.querySelector(".btime"); if(tm)tm.textContent=fmt(sm)+"–"+fmt(sm+b.durMin)+(state.showDur?"（"+b.durMin+"分）":"");
+      }
     };
     const up=ev=>{
       window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); clearDropHi();
       if(moving){
         if(okibaAtPoint(ev.clientX,ev.clientY)){parkBlock(b.id);return;}
+        b.startMin=clamp(snap(b.startMin),state.startMin,state.endMin-b.durMin); // 離した位置をグリッドに吸着
         const t=laneAtPoint(ev.clientX,ev.clientY);
         if(t)reassign(b.id,t.tlId);
         persist(); render(); checkOverlapPrompt(b.id);
