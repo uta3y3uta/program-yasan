@@ -86,16 +86,12 @@
   .sb-card svg{width:22px;height:22px;opacity:.55}
   .sb-okiba{flex:1;min-height:60px;overflow-y:auto;overflow-x:hidden;padding:12px 11px 14px;display:flex;flex-direction:column;gap:8px}
   .sb-okiba.drophi{background:#eef6ff;box-shadow:inset 0 0 0 3px var(--accent)}
-  /* 予定の貼り付け→カード自動生成 */
-  .sb-paste{width:100%;margin-top:10px;display:flex;flex-direction:column;gap:6px}
+  /* 予定入力→カード生成 */
+  .sb-paste{width:100%;display:flex;flex-direction:column;gap:8px}
   .sb-pastebox{width:100%;box-sizing:border-box;resize:none;border:1.5px solid var(--line);border-radius:11px;
     padding:7px 8px;font-size:11px;font-family:inherit;line-height:1.5;color:var(--ink);background:#fbfcfe;outline:none;min-height:66px}
   .sb-pastebox:focus{border-color:var(--accent);background:#fff}
   .sb-pastebox::placeholder{color:#aeb6c2;font-weight:600}
-  .sb-pastebtn{width:100%;border:none;border-radius:11px;background:var(--accent);color:#fff;font-weight:800;
-    font-size:12px;padding:8px 0;cursor:pointer;box-shadow:var(--shadow-s);transition:.15s}
-  .sb-pastebtn:hover{background:var(--accent-d)}
-  .sb-pastebtn:active{transform:scale(.97)}
 
   .main{flex:1;min-width:0;display:flex;flex-direction:column}
   .stagewrap{flex:1;position:relative;overflow:auto;padding:18px 20px 24px}
@@ -378,10 +374,9 @@
 <div class="workspace">
   <div class="sidebar no-capture" id="sidebar">
     <div class="sb-top">
-      <div class="sb-card" id="sbCard" title="クリックまたはドラッグでカードを追加"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
       <div class="sb-paste">
-        <textarea id="pasteBox" class="sb-pastebox" rows="4" placeholder="予定を貼り付け／入力&#10;例 9:00〜9:30 朝の会" title="時刻＋やることを貼り付けると、自動でカードになります。&#10;&#10;【例1：時刻で指定】&#10;17:30〜18:15 夕食&#10;18:15〜19:45 ワークショップ&#10;&#10;【例2：所要時間で配分】&#10;13:00〜17:00&#10;実践提案（20分間）&#10;休憩（10分間）&#10;&#10;※全角や「〇時〇分」の書き方もOK"></textarea>
-        <button id="pasteInsert" class="sb-pastebtn" type="button">カード化</button>
+        <textarea id="pasteBox" class="sb-pastebox" rows="4" placeholder="予定入力&#10;例 9:00〜9:30 朝の会" title="やること＋時刻を入力して＋を押すとタイムラインへ。&#10;やることだけ／空欄なら置き場にカードを追加します。&#10;&#10;【例1：時刻で指定】&#10;17:30〜18:15 夕食&#10;18:15〜19:45 ワークショップ&#10;&#10;【例2：所要時間で配分】&#10;13:00〜17:00&#10;実践提案（20分間）&#10;休憩（10分間）&#10;&#10;※全角や「〇時〇分」の書き方もOK"></textarea>
+        <div class="sb-card" id="sbCard" title="クリックでカードを追加／時刻があればタイムラインへ・ドラッグで配置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
       </div>
     </div>
     <div class="sb-okiba" id="okibaBody"></div>
@@ -479,8 +474,8 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const snap=m=>Math.round(m/state.scale)*state.scale;
-  function fmt(m){return Math.floor(m/60)+":"+String(m%60).padStart(2,"0");}
-  function fmt2(m){return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");}
+  function fmt(m){m=((m%1440)+1440)%1440;return Math.floor(m/60)+":"+String(m%60).padStart(2,"0");}   // 24h表記（30:00→6:00）
+  function fmt2(m){m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");}
   function parseTime(v){const[a,b]=v.split(":").map(Number);return a*60+b;}
   function lum(hex){const c=hex.replace("#","");return (0.299*parseInt(c.slice(0,2),16)+0.587*parseInt(c.slice(2,4),16)+0.114*parseInt(c.slice(4,6),16))/255;}
   function inkOn(hex){return lum(hex)>0.62?"#33405a":"#ffffff";}
@@ -868,7 +863,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
   const minAt=(y,top)=>state.startMin+(y-top)/state.ppm;
 
   // ---------------- pointer: create from palette ----------------
-  function onSwatchDown(e,color){
+  function onSwatchDown(e,color,onClick){
     e.preventDefault();
     const sx=e.clientX, sy=e.clientY;
     let moving=false, chip=null;
@@ -885,7 +880,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
     };
     const up=ev=>{
       window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); if(chip)chip.remove(); clearDropHi();
-      if(!moving){addParkedCard(color);return;}                       // click → add card to okiba
+      if(!moving){(onClick||(()=>addParkedCard(color)))();return;}    // click → 入力内容で行き先を判定（無ければ置き場）
       if(okibaAtPoint(ev.clientX,ev.clientY)){addParkedCard(color);return;}
       const t=laneAtPoint(ev.clientX,ev.clientY);
       if(t)addBlock(t.tlId,minAt(ev.clientY,t.rect.top),color);
@@ -1040,7 +1035,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
   // ---------------- palette (＋ボタンは左上ロゴと同じ青で統一) ----------------
   const ADD_COLOR="#4DABF7"; // = var(--accent) / COLORS[6]
   sbCard.style.background=ADD_COLOR; sbCard.style.color=inkOn(ADD_COLOR);
-  sbCard.addEventListener("pointerdown",e=>onSwatchDown(e,ADD_COLOR));
+  sbCard.addEventListener("pointerdown",e=>onSwatchDown(e,ADD_COLOR,plusCommit));
 
   // ---------------- 予定テキスト → やることカードを一括生成 ----------------
   // 例1: 「17:30〜18:15 夕食」のように各行に時刻範囲 → そのまま配置
@@ -1098,23 +1093,35 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
     selId=null; persist(); render();
     return cards.length;
   }
-  const pasteBox=$("#pasteBox");
-  if(pasteBox){
-    pasteBox.addEventListener("pointerdown",e=>e.stopPropagation());
-    pasteBox.addEventListener("paste",e=>{                              // 貼り付け時は自動でカード化
-      const t=(e.clipboardData||window.clipboardData).getData("text");
-      if(!t||!t.trim())return;
-      const n=insertSchedule(t);
-      if(n>0){e.preventDefault();pasteBox.value="";toast(n+"枚のカードを追加しました");} // 認識できた時だけ取り込み
-    });
-    const pIns=$("#pasteInsert");
-    pIns.addEventListener("pointerdown",e=>e.stopPropagation());
-    pIns.addEventListener("click",()=>{                                 // 手入力はボタンで取り込み
-      const n=insertSchedule(pasteBox.value);
-      if(n>0){pasteBox.value="";toast(n+"枚のカードを追加しました");}
-      else toast("時間とやることを入力してください");
-    });
+  function hasClockTime(text){                                         // 「9:」「9時」などの時刻が含まれるか
+    const z=text.replace(/[０-：]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0xFEE0));
+    return /\d{1,2}\s*[:時]/.test(z);
   }
+  function addParkedFromText(txt){                                      // やることだけ → 置き場へ（行ごとに1枚）
+    const z2h=s=>s.replace(/[０-：]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0xFEE0));
+    const lines=txt.split(/\r?\n/).map(l=>l.replace(/　/g," ").trim()).filter(l=>l);
+    if(!lines.length){addParkedCard(ADD_COLOR);return;}
+    let lastId=null;
+    lines.forEach(l=>{
+      const dm=z2h(l).match(/(\d{1,3})\s*分/);                          // 「○分」があれば所要時間に
+      const dur=dm?Math.max(parseInt(dm[1],10),1):Math.max(state.scale,30);
+      const c={id:gid("p"),label:l,color:ADD_COLOR,durMin:dur};
+      state.parking.push(c); lastId=c.id;
+    });
+    selId=lastId; persist(); render();
+    toast(lines.length+"枚のカードを置き場に追加しました");
+  }
+  function plusCommit(){                                                // ＋ボタン：入力内容で行き先を判定
+    const txt=pasteBox?pasteBox.value:"";
+    if(!txt||!txt.trim()){addParkedCard(ADD_COLOR);return;}             // 空 → 置き場に空カード
+    let n=0;
+    if(hasClockTime(txt))n=insertSchedule(txt);                         // 時刻あり → タイムラインへ
+    if(n>0)toast(n+"枚のカードを追加しました");
+    else addParkedFromText(txt);                                        // やることだけ → 置き場へ
+    if(pasteBox)pasteBox.value="";
+  }
+  const pasteBox=$("#pasteBox");
+  if(pasteBox)pasteBox.addEventListener("pointerdown",e=>e.stopPropagation()); // 入力欄クリックでカード操作を誤発火させない
 
   // ---------------- toolbar ----------------
   $("#segScale").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.scale=+b.dataset.s;persist();render();});
